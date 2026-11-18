@@ -4,35 +4,84 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Linux Updater</title>
-    <script src="/sidecar.js"></script>
+    <!-- SidecarApp serves preload.js; it syncs host theme tokens onto :root. -->
+    <script src="/preload.js"></script>
     <style>
+      /*
+       * Colors come from host theme tokens that preload.js writes on :root
+       * (--background, --foreground, --primary, ...). Fallbacks are only for
+       * opening the page outside Antigravity. data-theme is set from
+       * --background luminance (same approach as the Swarm board).
+       */
       :root {
         color-scheme: light dark;
-        --bg: var(--background, #0f1115);
-        --fg: var(--foreground, #e8eaed);
-        --muted: color-mix(in srgb, var(--fg) 62%, transparent);
-        --card: var(--card, #1a1d24);
-        --border: color-mix(in srgb, var(--fg) 14%, transparent);
-        --accent: #1a73e8;
-        --ok: #34a853;
-        --warn: #f9ab00;
-        --danger: #ea4335;
-        --ease: cubic-bezier(0.22, 1, 0.36, 1);
-        --fast: 160ms;
-        --med: 280ms;
+
+        --md-bg: var(--background, #f7f8fa);
+        --md-fg: var(--foreground, #1a1c1e);
+        --md-card: var(--card, #ffffff);
+        --md-primary: var(--primary, #1a73e8);
+        --md-on-primary: var(--primary-foreground, #ffffff);
+        --md-border: var(--border, color-mix(in srgb, var(--md-fg) 12%, transparent));
+        --md-muted: var(--muted-foreground, color-mix(in srgb, var(--md-fg) 62%, transparent));
+
+        --md-surface: color-mix(in srgb, var(--md-fg) 5%, var(--md-bg));
+        --md-surface-high: color-mix(in srgb, var(--md-fg) 8%, var(--md-bg));
+        --md-primary-container: color-mix(in srgb, var(--md-primary) 18%, var(--md-bg));
+        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 78%, var(--md-fg));
+        --md-success: #1e8e3e;
+        --md-success-container: color-mix(in srgb, var(--md-success) 16%, var(--md-bg));
+        --md-warn: #e37400;
+        --md-warn-container: color-mix(in srgb, var(--md-warn) 16%, var(--md-bg));
+        --md-error: var(--error, #d93025);
+        --md-error-container: color-mix(in srgb, var(--md-error) 14%, var(--md-bg));
+
+        --r-sm: 12px;
+        --r-md: 16px;
+        --r-lg: 20px;
+        --r-xl: 28px;
+        --r-full: 999px;
+
+        --font: var(--font-family, "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+        --mono: var(--editor-font-family, "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+
+        --spring: cubic-bezier(0.22, 1, 0.36, 1);
+        --spring-soft: cubic-bezier(0.34, 1.2, 0.64, 1);
+        --fast: 180ms;
+        --med: 320ms;
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --md-success: #7aae66;
+        --md-warn: #cab43e;
+        --md-surface: color-mix(in srgb, var(--md-fg) 7%, var(--md-bg));
+        --md-surface-high: color-mix(in srgb, var(--md-fg) 11%, var(--md-bg));
+        --md-primary-container: color-mix(in srgb, var(--md-primary) 24%, var(--md-bg));
+        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 55%, #fff);
       }
 
       * { box-sizing: border-box; }
 
+      html {
+        background: var(--md-bg);
+        color: var(--md-fg);
+      }
+
+      /* preload.js sets body margin/padding/background inline from host tokens. */
       body {
         margin: 0;
-        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: var(--bg);
-        color: var(--fg);
-        padding: 16px;
+        font: 14px/1.45 var(--font);
+        background: var(--md-bg) !important;
+        color: var(--md-fg) !important;
+        font-family: var(--font) !important;
+        -webkit-font-smoothing: antialiased;
         opacity: 0;
-        transform: translateY(6px);
-        animation: page-in 420ms var(--ease) forwards;
+        transform: translateY(8px);
+        animation: page-in 480ms var(--spring) forwards;
+      }
+
+      .page {
+        padding: 20px 16px 28px;
       }
 
       @keyframes page-in {
@@ -44,109 +93,146 @@
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 0.45; }
-        50% { opacity: 0.9; }
-      }
-
-      @keyframes shimmer {
-        0% { background-position: 100% 0; }
-        100% { background-position: -100% 0; }
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 0.95; }
       }
 
       @keyframes badge-pop {
-        from { transform: scale(0.92); opacity: 0; }
+        from { transform: scale(0.88); opacity: 0; }
         to { transform: scale(1); opacity: 1; }
       }
 
       @keyframes fade-up {
-        from { opacity: 0; transform: translateY(8px); }
+        from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: none; }
       }
 
-      h1 {
-        margin: 0 0 4px;
-        font-size: 18px;
-        font-weight: 650;
-        letter-spacing: -0.01em;
+      .hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 16px;
+        animation: fade-up 420ms var(--spring) both;
       }
 
-      .sub {
-        color: var(--muted);
+      .hero-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--r-md);
+        flex: 0 0 auto;
+        box-shadow: 0 1px 2px color-mix(in srgb, #000 10%, transparent);
+        display: block;
+      }
+
+      .hero h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      .hero .sub {
+        margin: 0;
+        color: var(--md-muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .banner {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--r-md);
+        background: var(--md-primary-container);
+        color: var(--md-on-primary-container);
+        font-size: 13px;
         margin-bottom: 14px;
+        animation: fade-up 420ms var(--spring) 40ms both;
+      }
+
+      .banner-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--md-primary) 22%, transparent);
+        color: var(--md-primary);
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
       }
 
       .status-bar {
         display: flex;
         align-items: center;
         gap: 10px;
-        min-height: 36px;
-        margin-bottom: 12px;
-        padding: 8px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--fg) 4%, transparent);
-        color: var(--muted);
+        min-height: 40px;
+        margin-bottom: 14px;
+        padding: 10px 14px;
+        border-radius: var(--r-lg);
+        background: var(--md-surface);
+        color: var(--md-muted);
         font-size: 13px;
-        transition: border-color var(--fast) ease, background var(--fast) ease, color var(--fast) ease;
+        transition: background var(--fast) ease, color var(--fast) ease;
+        animation: fade-up 420ms var(--spring) 70ms both;
       }
 
       .status-bar.active {
-        border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-        background: color-mix(in srgb, var(--accent) 10%, transparent);
-        color: var(--fg);
+        background: var(--md-primary-container);
+        color: var(--md-on-primary-container);
       }
 
-      .status-bar.ok {
-        border-color: color-mix(in srgb, var(--ok) 40%, transparent);
-        background: color-mix(in srgb, var(--ok) 10%, transparent);
-        color: var(--fg);
+      .status-bar.success {
+        background: var(--md-success-container);
+        color: var(--md-fg);
+      }
+
+      .status-bar.warn {
+        background: var(--md-warn-container);
+        color: var(--md-fg);
       }
 
       .status-bar.err {
-        border-color: color-mix(in srgb, var(--danger) 40%, transparent);
-        background: color-mix(in srgb, var(--danger) 10%, transparent);
-        color: var(--fg);
+        background: var(--md-error-container);
+        color: var(--md-fg);
       }
 
       .spinner {
         width: 14px;
         height: 14px;
         border-radius: 50%;
-        border: 2px solid color-mix(in srgb, var(--fg) 22%, transparent);
-        border-top-color: var(--accent);
+        border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+        border-top-color: currentColor;
         flex: 0 0 auto;
         animation: spin 700ms linear infinite;
-        opacity: 0;
-        transform: scale(0.8);
-        transition: opacity var(--fast) ease, transform var(--fast) ease;
+        display: none;
       }
 
-      .status-bar.active .spinner {
-        opacity: 1;
-        transform: scale(1);
-      }
+      .status-bar.active .spinner { display: inline-block; }
 
       .status-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: var(--muted);
+        background: currentColor;
+        opacity: 0.55;
         flex: 0 0 auto;
-        transition: background var(--fast) ease, box-shadow var(--fast) ease;
-      }
-
-      .status-bar.ok .status-dot {
-        background: var(--ok);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent);
-      }
-
-      .status-bar.err .status-dot {
-        background: var(--danger);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent);
       }
 
       .status-bar.active .status-dot { display: none; }
-      .status-bar:not(.active) .spinner { display: none; }
+      .status-bar.success .status-dot { background: var(--md-success); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-success) 22%, transparent); }
+      .status-bar.warn .status-dot { background: var(--md-warn); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-warn) 22%, transparent); }
+      .status-bar.err .status-dot { background: var(--md-error); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-error) 22%, transparent); }
+
+      .meta {
+        margin: -6px 0 14px;
+        font-size: 12px;
+        color: var(--md-muted);
+        min-height: 16px;
+      }
 
       .grid {
         display: grid;
@@ -154,24 +240,18 @@
       }
 
       .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px 14px;
+        background: var(--md-surface-high);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
         position: relative;
         overflow: hidden;
         opacity: 0;
-        animation: fade-up 420ms var(--ease) forwards;
-        transition: border-color var(--med) var(--ease), transform var(--med) var(--ease), box-shadow var(--med) var(--ease);
+        animation: fade-up 420ms var(--spring) forwards;
+        transition: transform var(--med) var(--spring), background var(--fast) ease;
       }
 
-      #app-card { animation-delay: 40ms; }
-      #cli-card { animation-delay: 100ms; }
-      #log-card { animation-delay: 160ms; }
-
-      .card.loading {
-        border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-      }
+      #app-card { animation-delay: 90ms; }
+      #cli-card { animation-delay: 140ms; }
 
       .card.loading::after {
         content: "";
@@ -180,12 +260,20 @@
         background: linear-gradient(
           110deg,
           transparent 20%,
-          color-mix(in srgb, var(--fg) 8%, transparent) 45%,
+          color-mix(in srgb, var(--md-fg) 7%, transparent) 45%,
           transparent 70%
         );
         background-size: 200% 100%;
-        animation: shimmer 1.2s linear infinite;
+        animation: pulse 1.2s ease-in-out infinite;
         pointer-events: none;
+      }
+
+      .label {
+        color: var(--md-muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin-bottom: 8px;
       }
 
       .row {
@@ -193,26 +281,22 @@
         justify-content: space-between;
         gap: 12px;
         align-items: baseline;
-        margin-top: 4px;
+        margin-top: 6px;
+        font-size: 13px;
       }
 
-      .label {
-        color: var(--muted);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-      }
+      .row span:first-child { color: var(--md-muted); }
 
       .value {
         font-variant-numeric: tabular-nums;
         word-break: break-all;
         text-align: right;
-        transition: opacity var(--fast) ease, filter var(--fast) ease;
+        max-width: 70%;
+        transition: opacity var(--fast) ease;
       }
 
       .card.loading .value {
         opacity: 0.45;
-        filter: blur(0.4px);
         animation: pulse 1.1s ease-in-out infinite;
       }
 
@@ -220,121 +304,175 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin-top: 10px;
-        padding: 3px 9px;
-        border-radius: 999px;
+        margin-top: 12px;
+        padding: 4px 12px;
+        border-radius: var(--r-full);
         font-size: 12px;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--fg) 4%, transparent);
-        animation: badge-pop 280ms var(--ease);
+        font-weight: 600;
+        background: color-mix(in srgb, var(--md-fg) 6%, transparent);
+        color: var(--md-muted);
+        animation: badge-pop 280ms var(--spring-soft);
       }
 
       .badge.ok {
-        color: var(--ok);
-        border-color: color-mix(in srgb, var(--ok) 40%, transparent);
-        background: color-mix(in srgb, var(--ok) 10%, transparent);
+        color: var(--md-success);
+        background: var(--md-success-container);
       }
 
       .badge.warn {
-        color: var(--warn);
-        border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-        background: color-mix(in srgb, var(--warn) 10%, transparent);
+        color: var(--md-warn);
+        background: var(--md-warn-container);
       }
 
       .badge.checking {
-        color: var(--accent);
-        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-        background: color-mix(in srgb, var(--accent) 10%, transparent);
+        color: var(--md-on-primary-container);
+        background: var(--md-primary-container);
       }
 
       .badge .mini-spin {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        border: 1.5px solid color-mix(in srgb, var(--accent) 35%, transparent);
-        border-top-color: var(--accent);
+        border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
+        border-top-color: currentColor;
         animation: spin 650ms linear infinite;
       }
 
-      .actions {
+      .btn-group {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        margin: 14px 0;
+        gap: 2px;
+        margin: 16px 0 14px;
+        padding: 4px;
+        border-radius: var(--r-xl);
+        background: var(--md-surface);
+        animation: fade-up 420ms var(--spring) 160ms both;
       }
 
       button {
         appearance: none;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--fg) 6%, transparent);
-        color: var(--fg);
-        border-radius: 10px;
-        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        color: var(--md-fg);
+        border-radius: var(--r-lg);
+        padding: 10px 14px;
         cursor: pointer;
         font: inherit;
+        font-weight: 600;
+        font-size: 13px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        min-height: 36px;
+        gap: 0;
+        min-height: 40px;
+        flex: 1 1 0;
+        min-width: 0;
+        position: relative;
         transition:
-          transform var(--fast) var(--ease),
           background var(--fast) ease,
-          border-color var(--fast) ease,
-          box-shadow var(--fast) ease,
+          color var(--fast) ease,
           opacity var(--fast) ease;
       }
 
       button:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--fg) 11%, transparent);
-        transform: translateY(-1px);
+        background: color-mix(in srgb, var(--md-fg) 6%, transparent);
       }
 
       button:active:not(:disabled) {
-        transform: translateY(0) scale(0.98);
+        background: color-mix(in srgb, var(--md-fg) 10%, transparent);
       }
 
       button.primary {
-        background: var(--accent);
-        border-color: transparent;
-        color: #fff;
-        box-shadow: 0 1px 0 color-mix(in srgb, #000 18%, transparent);
+        background: var(--md-primary);
+        color: var(--md-on-primary);
       }
 
       button.primary:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--accent) 88%, #fff);
-        box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 28%, transparent);
+        background: color-mix(in srgb, var(--md-primary) 88%, #fff);
+      }
+
+      button.primary:active:not(:disabled) {
+        background: color-mix(in srgb, var(--md-primary) 80%, #000);
+      }
+
+      button.tonal {
+        background: var(--md-primary-container);
+        color: var(--md-on-primary-container);
+      }
+
+      button.tonal:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--md-primary) 22%, var(--md-bg));
+      }
+
+      button.tonal:active:not(:disabled) {
+        background: color-mix(in srgb, var(--md-primary) 28%, var(--md-bg));
       }
 
       button:disabled {
-        opacity: 0.55;
+        opacity: 0.45;
         cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
       }
 
+      /* Spinner overlays the label so busy state never changes button width. */
       button .btn-spin {
+        position: absolute;
+        left: 12px;
+        top: 50%;
         width: 12px;
         height: 12px;
+        margin-top: -6px;
         border-radius: 50%;
         border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
         border-top-color: currentColor;
         animation: spin 650ms linear infinite;
-        display: none;
+        opacity: 0;
+        pointer-events: none;
       }
 
-      button.busy .btn-spin { display: inline-block; }
+      button.busy .btn-spin { opacity: 1; }
       button.busy .btn-label { opacity: 0.92; }
+      button .btn-label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
 
-      .warn-box {
-        border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
-        background: color-mix(in srgb, var(--warn) 12%, transparent);
-        border-radius: 10px;
-        padding: 10px 12px;
-        color: var(--fg);
-        margin-bottom: 12px;
+      details.log {
+        border-radius: var(--r-lg);
+        background: var(--md-surface);
+        overflow: hidden;
+        animation: fade-up 420ms var(--spring) 200ms both;
+      }
+
+      details.log summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 12px 14px;
         font-size: 13px;
-        animation: fade-up 420ms var(--ease) both;
+        font-weight: 600;
+        color: var(--md-muted);
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      details.log summary::-webkit-details-marker { display: none; }
+
+      details.log summary::after {
+        content: "▸";
+        transition: transform var(--fast) var(--spring);
+        color: var(--md-muted);
+      }
+
+      details.log[open] summary::after {
+        transform: rotate(90deg);
+      }
+
+      details.log .log-body {
+        padding: 0 14px 14px;
       }
 
       pre {
@@ -343,21 +481,127 @@
         overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
-        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        color: var(--muted);
-        transition: color var(--fast) ease;
-      }
-
-      #log-card.busy pre {
-        color: var(--fg);
+        font: 12px/1.45 var(--mono);
+        color: var(--md-muted);
+        background: color-mix(in srgb, var(--md-fg) 3%, transparent);
+        border-radius: var(--r-sm);
+        padding: 10px 12px;
       }
 
       .error {
-        color: var(--danger);
-        margin-top: 8px;
+        color: var(--md-error);
+        margin-top: 10px;
         font-size: 13px;
-        animation: fade-up 240ms var(--ease);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
       }
+
+      .error[hidden] { display: none; }
+
+      .linkish {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--md-primary);
+        font: inherit;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        padding: 0;
+        min-height: auto;
+        flex: 0 0 auto;
+        border-radius: 0;
+      }
+
+      .linkish:hover:not(:disabled) {
+        background: transparent;
+        text-decoration: underline;
+      }
+
+      .settings-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border-radius: var(--r-lg);
+        background: var(--md-surface);
+        animation: fade-up 420ms var(--spring) 180ms both;
+      }
+
+      .settings-copy {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .settings-copy strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .settings-copy span {
+        display: block;
+        font-size: 12px;
+        color: var(--md-muted);
+        line-height: 1.4;
+      }
+
+      .switch {
+        position: relative;
+        width: 48px;
+        height: 28px;
+        flex: 0 0 auto;
+        margin-top: 2px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+
+      .switch-track {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--r-full);
+        background: color-mix(in srgb, var(--md-fg) 18%, transparent);
+        cursor: pointer;
+        transition: background var(--fast) ease;
+      }
+
+      .switch-track::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--md-card, #fff);
+        box-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent);
+        transition: transform var(--med) var(--spring);
+      }
+
+      .switch input:checked + .switch-track {
+        background: var(--md-primary);
+      }
+
+      .switch input:checked + .switch-track::after {
+        transform: translateX(20px);
+      }
+
+      .switch input:focus-visible + .switch-track {
+        outline: 2px solid var(--md-primary);
+        outline-offset: 2px;
+      }
+
+      .hidden { display: none !important; }
 
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
@@ -372,11 +616,22 @@
     </style>
   </head>
   <body>
-    <h1>Linux Updater</h1>
-    <div class="sub">Desktop App (/opt) and agy CLI</div>
+    <div class="page">
+    <header class="hero">
+      <svg class="hero-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="48" height="48" role="img" aria-label="Linux Updater">
+        <rect width="128" height="128" rx="24" fill="#1a73e8"/>
+        <path fill="#fff" d="M64 28c-2.2 0-4 1.8-4 4v44.2l-14.6-14.6a4 4 0 1 0-5.7 5.7l21.5 21.5a4 4 0 0 0 5.7 0l21.5-21.5a4 4 0 1 0-5.7-5.7L68 76.2V32c0-2.2-1.8-4-4-4z"/>
+        <rect x="36" y="96" width="56" height="8" rx="4" fill="#fff" opacity=".9"/>
+      </svg>
+      <div>
+        <h1>Linux Updater</h1>
+        <p class="sub">Keep the desktop App (/opt) and agy CLI current from official Google downloads.</p>
+      </div>
+    </header>
 
-    <div class="warn-box">
-      Updating the App quits Antigravity and prompts for pkexec. Relaunch the app afterward.
+    <div class="banner" role="note">
+      <span class="banner-icon" aria-hidden="true">i</span>
+      <span>Updating the App quits Antigravity and prompts for pkexec. Relaunch the app afterward.</span>
     </div>
 
     <div class="status-bar" id="status-bar" aria-live="polite">
@@ -384,6 +639,7 @@
       <span class="status-dot" aria-hidden="true"></span>
       <span id="status-text">Ready</span>
     </div>
+    <div class="meta" id="cache-meta"></div>
 
     <div class="grid">
       <section class="card" id="app-card">
@@ -398,82 +654,141 @@
         <div class="row"><span>Remote</span><span class="value" id="cli-remote">…</span></div>
         <span class="badge checking" id="cli-badge"><span class="mini-spin" aria-hidden="true"></span>checking</span>
       </section>
+      <section class="card" id="plugin-card">
+        <div class="label">Plugin (GitHub)</div>
+        <div class="row"><span>Local</span><span class="value" id="plugin-local">…</span></div>
+        <div class="row"><span>Remote</span><span class="value" id="plugin-remote">…</span></div>
+        <span class="badge checking" id="plugin-badge"><span class="mini-spin" aria-hidden="true"></span>checking</span>
+      </section>
     </div>
 
-    <div class="actions">
-      <button type="button" id="btn-check">
+    <div class="btn-group" role="group" aria-label="Update actions">
+      <button type="button" class="tonal" id="btn-check">
         <span class="btn-spin" aria-hidden="true"></span>
-        <span class="btn-label">Check updates</span>
+        <span class="btn-label">Check</span>
       </button>
-      <button type="button" class="primary" id="btn-app">
+      <button type="button" class="primary" id="btn-app" disabled>
         <span class="btn-spin" aria-hidden="true"></span>
         <span class="btn-label">Update App</span>
       </button>
-      <button type="button" class="primary" id="btn-cli">
+      <button type="button" class="primary" id="btn-cli" disabled>
         <span class="btn-spin" aria-hidden="true"></span>
         <span class="btn-label">Update CLI</span>
       </button>
+      <button type="button" class="primary" id="btn-plugin" disabled>
+        <span class="btn-spin" aria-hidden="true"></span>
+        <span class="btn-label">Update Plugin</span>
+      </button>
     </div>
 
-    <section class="card" id="log-card">
-      <div class="label">Log</div>
-      <pre id="log">Ready.</pre>
-      <div class="error" id="error" hidden></div>
-    </section>
+    <div class="settings-row">
+      <div class="settings-copy">
+        <strong>Notify on every startup</strong>
+        <span id="notify-hint">Off: notify only when updates are available. On: always notify with current status at startup.</span>
+      </div>
+      <label class="switch" title="Notify on every startup">
+        <input type="checkbox" id="notify-every" />
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+    </div>
+
+    <details class="log" id="log-details">
+      <summary>Log</summary>
+      <div class="log-body">
+        <pre id="log">Ready.</pre>
+        <div class="error" id="error" hidden>
+          <span id="error-text"></span>
+          <button type="button" class="linkish" id="btn-retry">Retry</button>
+        </div>
+      </div>
+    </details>
+    </div>
 
     <script>
+      // Mark light/dark from host --background (preload writes tokens on :root).
+      function syncScheme() {
+        const probe = document.createElement('span');
+        probe.style.cssText =
+          'position:absolute;visibility:hidden;color:var(--background, #f7f8fa)';
+        document.documentElement.appendChild(probe);
+        const c = getComputedStyle(probe).color;
+        probe.remove();
+        const nums = (c.match(/[\d.]+/g) || []).map(Number);
+        if (nums.length < 3) return;
+        const scale = c.startsWith('color(') ? 1 : 255;
+        const [r, g, b] = nums.slice(0, 3).map((v) => v / scale);
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        document.documentElement.dataset.theme = lum < 0.5 ? 'dark' : 'light';
+      }
+      syncScheme();
+      new MutationObserver(syncScheme).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['style'],
+      });
+
       const $ = (id) => document.getElementById(id);
       const ACTION_LABELS = {
         '/api/status': 'Checking for updates…',
         '/api/update-app': 'Updating desktop App…',
         '/api/update-cli': 'Updating CLI…',
+        '/api/update-plugin': 'Updating plugin from GitHub…',
       };
       const BUTTON_IDLE = {
-        'btn-check': 'Check updates',
+        'btn-check': 'Check',
         'btn-app': 'Update App',
         'btn-cli': 'Update CLI',
-      };
-      const BUTTON_BUSY = {
-        'btn-check': 'Checking…',
-        'btn-app': 'Updating…',
-        'btn-cli': 'Updating…',
+        'btn-plugin': 'Update Plugin',
       };
 
-      let activePath = null;
+      let lastStatus = null;
+      let busy = false;
+      let settings = { notifyEveryStartup: false };
 
       function setStatus(mode, text) {
         const bar = $('status-bar');
-        bar.classList.remove('active', 'ok', 'err');
+        bar.classList.remove('active', 'success', 'warn', 'err');
         if (mode) bar.classList.add(mode);
         $('status-text').textContent = text;
       }
 
-      function setBusy(path, busy) {
-        activePath = busy ? path : null;
-        const activeBtn =
-          path === '/api/status' ? 'btn-check' :
-          path === '/api/update-app' ? 'btn-app' :
-          path === '/api/update-cli' ? 'btn-cli' : null;
-
-        ['btn-check', 'btn-app', 'btn-cli'].forEach((id) => {
-          const btn = $(id);
-          btn.disabled = busy;
-          const isActive = busy && id === activeBtn;
-          btn.classList.toggle('busy', isActive);
-          btn.querySelector('.btn-label').textContent =
-            isActive ? BUTTON_BUSY[id] : BUTTON_IDLE[id];
-        });
-
-        const checking = busy && path === '/api/status';
-        ['app-card', 'cli-card'].forEach((id) => {
-          $(id).classList.toggle('loading', checking);
-        });
-        $('log-card').classList.toggle('busy', busy);
-
-        if (checking) {
-          setBadgeChecking($('app-badge'));
-          setBadgeChecking($('cli-badge'));
+      function setCacheMeta(checkedAt, cached) {
+        const el = $('cache-meta');
+        if (!checkedAt) {
+          el.textContent = '';
+          return;
         }
+        const when = new Date(checkedAt);
+        const stamp = Number.isNaN(when.getTime())
+          ? checkedAt
+          : when.toLocaleString();
+        el.textContent = cached
+          ? `Showing cached result · checked ${stamp}`
+          : `Last checked ${stamp}`;
+      }
+
+      function applySettings(next) {
+        settings = {
+          notifyEveryStartup: Boolean(next?.notifyEveryStartup),
+        };
+        const toggle = $('notify-every');
+        if (toggle.checked !== settings.notifyEveryStartup) {
+          toggle.checked = settings.notifyEveryStartup;
+        }
+        $('notify-hint').textContent = settings.notifyEveryStartup
+          ? 'On: always notify with current status at startup.'
+          : 'Off: notify only when updates are available.';
+      }
+
+      function cliTracked(status) {
+        const cli = status?.cli;
+        if (!cli) return false;
+        if (typeof cli.tracked === 'boolean') return cli.tracked;
+        return Boolean(cli.localVersion);
+      }
+
+      function setCliVisible(visible) {
+        $('cli-card').classList.toggle('hidden', !visible);
+        $('btn-cli').classList.toggle('hidden', !visible);
       }
 
       function setBadgeChecking(el) {
@@ -486,39 +801,200 @@
         el.textContent = available ? 'update available' : 'up to date';
       }
 
-      function renderStatus(status) {
+      function setPluginBadge(el, plugin) {
+        if (plugin?.updateAvailable) {
+          el.className = 'badge warn';
+          el.textContent = 'update available';
+          return;
+        }
+        if (plugin?.localAhead) {
+          el.className = 'badge checking';
+          el.textContent = 'local ahead of GitHub';
+          return;
+        }
+        setBadge(el, false);
+      }
+
+      function updateActionButtons(status) {
+        const app = status?.app || {};
+        const cli = status?.cli || {};
+        const plugin = status?.plugin || {};
+        const appBtn = $('btn-app');
+        const cliBtn = $('btn-cli');
+        const pluginBtn = $('btn-plugin');
+        const tracked = cliTracked(status);
+
+        setCliVisible(tracked);
+
+        if (!busy) {
+          appBtn.disabled = !app.updateAvailable;
+          pluginBtn.disabled = !plugin.updateAvailable;
+          if (tracked) {
+            const cliInstalled = Boolean(cli.localVersion);
+            const cliLabel = cliInstalled ? 'Update CLI' : 'Install CLI';
+            BUTTON_IDLE['btn-cli'] = cliLabel;
+            cliBtn.querySelector('.btn-label').textContent = cliLabel;
+            cliBtn.disabled = !cli.updateAvailable;
+          }
+        }
+      }
+
+      function renderStatus(status, { checkedAt, cached } = {}) {
+        lastStatus = status;
         const app = status.app || {};
         const cli = status.cli || {};
+        const plugin = status.plugin || {};
+        const tracked = cliTracked(status);
         $('app-local').textContent = app.localBuildId
           ? `${app.localVersion || '?'} (${app.localBuildId})`
           : app.localVersion || 'not installed';
         $('app-remote').textContent = app.remoteBuildId
           ? `${app.remoteVersion || '?'} (${app.remoteBuildId})`
           : 'unknown';
-        $('cli-local').textContent = cli.localVersion || 'not installed';
-        $('cli-remote').textContent = cli.remoteVersion || 'unknown';
+        if (tracked) {
+          $('cli-local').textContent = cli.localVersion || 'not installed';
+          $('cli-remote').textContent = cli.remoteVersion || 'unknown';
+          setBadge($('cli-badge'), !!cli.updateAvailable);
+        }
+        $('plugin-local').textContent = plugin.localCommit
+          ? `${plugin.localVersion || '?'} (${plugin.localCommit})`
+          : plugin.localVersion || 'unknown';
+        $('plugin-remote').textContent = plugin.remoteCommit
+          ? `${plugin.remoteVersion || '?'} (${plugin.remoteCommit})`
+          : plugin.remoteVersion || 'unknown';
         setBadge($('app-badge'), !!app.updateAvailable);
-        setBadge($('cli-badge'), !!cli.updateAvailable);
+        setPluginBadge($('plugin-badge'), plugin);
+        updateActionButtons(status);
+        setCacheMeta(checkedAt, cached);
+
+        if (!busy) {
+          const cliUp = tracked && cli.updateAvailable;
+          if (app.updateAvailable || cliUp || plugin.updateAvailable) {
+            setStatus('warn', 'Updates available');
+          } else if (plugin.localAhead) {
+            setStatus('success', 'Up to date (plugin ahead of GitHub)');
+          } else {
+            setStatus('success', 'Everything is up to date');
+          }
+        }
       }
 
-      async function callApi(path) {
+      function setBusy(path, isBusy) {
+        busy = isBusy;
+        const activeBtn =
+          path === '/api/status' ? 'btn-check' :
+          path === '/api/update-app' ? 'btn-app' :
+          path === '/api/update-cli' ? 'btn-cli' :
+          path === '/api/update-plugin' ? 'btn-plugin' : null;
+
+        ['btn-check', 'btn-app', 'btn-cli', 'btn-plugin'].forEach((id) => {
+          const btn = $(id);
+          const isActive = isBusy && id === activeBtn;
+          btn.classList.toggle('busy', isActive);
+          // Keep idle labels so the button group width stays stable.
+          if (!isBusy && BUTTON_IDLE[id]) {
+            btn.querySelector('.btn-label').textContent = BUTTON_IDLE[id];
+          }
+        });
+
+        $('btn-check').disabled = isBusy;
+        if (isBusy) {
+          $('btn-app').disabled = true;
+          $('btn-cli').disabled = true;
+          $('btn-plugin').disabled = true;
+        } else {
+          updateActionButtons(lastStatus);
+        }
+
+        const checking = isBusy && path === '/api/status';
+        const cards = ['app-card', 'plugin-card'];
+        if (cliTracked(lastStatus) || !lastStatus) cards.push('cli-card');
+        ['app-card', 'cli-card', 'plugin-card'].forEach((id) => {
+          $(id).classList.toggle('loading', checking && cards.includes(id));
+        });
+
+        if (checking) {
+          setBadgeChecking($('app-badge'));
+          setBadgeChecking($('plugin-badge'));
+          if (cliTracked(lastStatus) || !lastStatus) {
+            setBadgeChecking($('cli-badge'));
+          }
+        }
+      }
+
+      function showError(message) {
+        $('error').hidden = false;
+        $('error-text').textContent = message;
+        $('log-details').open = true;
+      }
+
+      function clearError() {
         $('error').hidden = true;
-        setBusy(path, true);
-        setStatus('active', ACTION_LABELS[path] || 'Working…');
-        $('log').textContent = ACTION_LABELS[path] || `Running ${path}…`;
+        $('error-text').textContent = '';
+      }
+
+      async function apiCall(path, { body = {}, method } = {}) {
+        const resolvedMethod = method || 'POST';
+        const opts = { method: resolvedMethod };
+        if (resolvedMethod !== 'GET') {
+          opts.body = JSON.stringify(body);
+        }
+        if (window.sidecar && typeof window.sidecar.fetch === 'function') {
+          const res = await window.sidecar.fetch(path, opts);
+          return res.json();
+        }
+        const res = await fetch(path, {
+          ...opts,
+          headers: { 'content-type': 'application/json' },
+        });
+        return res.json();
+      }
+
+      async function loadCached() {
+        try {
+          const data = await apiCall('/api/status', { method: 'GET' });
+          if (data.settings) applySettings(data.settings);
+          if (data.ok && data.status) {
+            renderStatus(data.status, {
+              checkedAt: data.checkedAt,
+              cached: !!data.cached,
+            });
+            if (data.log) $('log').textContent = data.log;
+            return true;
+          }
+        } catch {
+          /* ignore — fresh check will follow */
+        }
+        return false;
+      }
+
+      async function loadSettings() {
+        try {
+          const data = await apiCall('/api/settings', { method: 'GET' });
+          if (data.ok && data.settings) applySettings(data.settings);
+        } catch {
+          applySettings(settings);
+        }
+      }
+
+      async function callApi(path, { silent = false } = {}) {
+        clearError();
+        if (!silent) {
+          setBusy(path, true);
+          setStatus('active', ACTION_LABELS[path] || 'Working…');
+          if (path !== '/api/status' || !lastStatus) {
+            $('log').textContent = ACTION_LABELS[path] || `Running ${path}…`;
+          }
+        } else {
+          setStatus('active', 'Refreshing…');
+          $('btn-check').disabled = true;
+        }
 
         try {
-          let data;
-          if (window.sidecar && typeof window.sidecar.api === 'function') {
-            data = await window.sidecar.api(path, {});
-          } else {
-            const res = await fetch(path, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: '{}',
-            });
-            data = await res.json();
-          }
+          const data = await apiCall(path, {
+            method: 'POST',
+            body: path === '/api/status' ? { fresh: true } : {},
+          });
 
           if (data.log) {
             $('log').textContent = data.log;
@@ -529,45 +1005,63 @@
           }
 
           if (!data.ok) {
-            $('error').hidden = false;
-            $('error').textContent = data.error || `Command failed (code ${data.code ?? '?'})`;
+            showError(data.error || `Command failed (code ${data.code ?? '?'})`);
             setStatus('err', data.error || 'Something went wrong');
+            if (data.status) {
+              renderStatus(data.status, {
+                checkedAt: data.checkedAt,
+                cached: !!data.stale,
+              });
+            } else if (lastStatus) {
+              updateActionButtons(lastStatus);
+            }
           } else if (path === '/api/status') {
             const appUp = data.status?.app?.updateAvailable;
-            const cliUp = data.status?.cli?.updateAvailable;
-            if (appUp || cliUp) {
-              setStatus('ok', 'Updates available');
+            const cliUp = data.status?.cli?.tracked && data.status?.cli?.updateAvailable;
+            const pluginUp = data.status?.plugin?.updateAvailable;
+            if (appUp || cliUp || pluginUp) {
+              setStatus('warn', 'Updates available');
+            } else if (data.status?.plugin?.localAhead) {
+              setStatus('success', 'Up to date (plugin ahead of GitHub)');
             } else {
-              setStatus('ok', 'Everything is up to date');
+              setStatus('success', 'Everything is up to date');
             }
           } else if (path === '/api/update-app') {
-            setStatus('ok', 'App update finished — relaunch Antigravity');
+            setStatus('success', 'App update finished — relaunch Antigravity');
           } else if (path === '/api/update-cli') {
-            setStatus('ok', 'CLI update finished');
+            setStatus('success', 'CLI update finished');
+          } else if (path === '/api/update-plugin') {
+            setStatus('success', 'Plugin updated — restart Antigravity');
           }
 
+          if (data.settings) applySettings(data.settings);
+
           if (data.status) {
-            renderStatus(data.status);
+            renderStatus(data.status, {
+              checkedAt: data.checkedAt,
+              cached: !!data.cached,
+            });
           } else if (path !== '/api/status') {
-            await refresh();
+            await callApi('/api/status', { silent: true });
             return;
           }
           return data;
         } catch (err) {
-          $('error').hidden = false;
-          $('error').textContent = String(err);
+          showError(String(err));
           $('log').textContent = String(err);
           setStatus('err', String(err));
+          if (lastStatus) updateActionButtons(lastStatus);
         } finally {
-          setBusy(path, false);
+          if (!silent) setBusy(path, false);
+          else {
+            $('btn-check').disabled = false;
+            updateActionButtons(lastStatus);
+          }
         }
       }
 
-      async function refresh() {
-        await callApi('/api/status');
-      }
-
-      $('btn-check').addEventListener('click', () => refresh());
+      $('btn-check').addEventListener('click', () => callApi('/api/status'));
+      $('btn-retry').addEventListener('click', () => callApi('/api/status'));
       $('btn-app').addEventListener('click', async () => {
         if (!confirm('Update the desktop App? Antigravity will quit and pkexec will prompt for authorization.')) {
           return;
@@ -575,13 +1069,43 @@
         await callApi('/api/update-app');
       });
       $('btn-cli').addEventListener('click', async () => {
-        if (!confirm('Update the agy CLI via the official install script?')) {
-          return;
-        }
+        const installing = !lastStatus?.cli?.localVersion;
+        const msg = installing
+          ? 'Install the agy CLI via the official install script?'
+          : 'Update the agy CLI via the official install script?';
+        if (!confirm(msg)) return;
         await callApi('/api/update-cli');
       });
+      $('btn-plugin').addEventListener('click', async () => {
+        const localV = lastStatus?.plugin?.localVersion || '?';
+        const remoteV = lastStatus?.plugin?.remoteVersion || '?';
+        const repo = lastStatus?.plugin?.repo || 'xxxizum1kxxx/agy-linux-live-update';
+        if (!confirm(`Update plugin ${localV} → ${remoteV} from GitHub (${repo})?\nRestart Antigravity afterward to reload the Sidecar.`)) {
+          return;
+        }
+        await callApi('/api/update-plugin');
+      });
+      $('notify-every').addEventListener('change', async (e) => {
+        const next = { notifyEveryStartup: e.target.checked };
+        applySettings(next);
+        try {
+          const data = await apiCall('/api/settings', {
+            method: 'POST',
+            body: next,
+          });
+          if (data.ok && data.settings) applySettings(data.settings);
+        } catch (err) {
+          showError(`Failed to save settings: ${err}`);
+          e.target.checked = !next.notifyEveryStartup;
+          applySettings({ notifyEveryStartup: e.target.checked });
+        }
+      });
 
-      refresh();
+      (async () => {
+        await loadSettings();
+        const hadCache = await loadCached();
+        await callApi('/api/status', { silent: hadCache });
+      })();
     </script>
   </body>
 </html>

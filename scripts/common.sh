@@ -13,6 +13,8 @@ INSTALL_ROOT_HELPER="$_COMMON_DIR/install-root.sh"
 CURL_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 CLI_INSTALL_URL='https://antigravity.google/cli/install.sh'
 PLUGIN_NAME='agy-linux-live-update'
+GITHUB_REPO='xxxizum1kxxx/agy-linux-live-update'
+GITHUB_BRANCH='main'
 
 detect_rel_arch() {
   local arch
@@ -121,6 +123,83 @@ except Exception:
 PY
 }
 
+version_ge() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+
+def parse(v: str):
+    return tuple(int(x) for x in v.split(".")[:3])
+
+a, b = sys.argv[1], sys.argv[2]
+try:
+    sys.exit(0 if parse(a) >= parse(b) else 1)
+except Exception:
+    sys.exit(1)
+PY
+}
+
+local_plugin_version() {
+  python3 - "$PLUGIN_ROOT/plugin.json" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1])).get("version") or "")
+PY
+}
+
+local_plugin_commit() {
+  if [ -d "$PLUGIN_ROOT/.git" ] && command -v git >/dev/null 2>&1; then
+    git -C "$PLUGIN_ROOT" rev-parse --short HEAD 2>/dev/null || true
+  fi
+}
+
+remote_plugin_version() {
+  curl_get "https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/plugin.json" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version") or "")'
+}
+
+remote_plugin_commit() {
+  curl_get \
+    -H 'Accept: application/vnd.github+json' \
+    "https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}" \
+    | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sha") or "")[:7])'
+}
+
+install_plugin_from_dir() {
+  local src=$1
+  if ! command -v agy >/dev/null 2>&1; then
+    echo "agy not found; cannot reinstall plugin" >&2
+    return 1
+  fi
+  agy plugin validate --strict "$src"
+  agy plugin uninstall linux-updater >/dev/null 2>&1 || true
+  agy plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
+  agy plugin install "$src"
+  # Re-source PLUGIN_ROOT after install if we updated from a temp tree.
+  if [ -d "$HOME/.gemini/config/plugins/$PLUGIN_NAME" ]; then
+    PLUGIN_ROOT="$HOME/.gemini/config/plugins/$PLUGIN_NAME"
+  fi
+  enable_sidecar_config
+}
+
+update_this_plugin_from_github() {
+  local stage tarball remote_sha
+  mkdir -p "$CACHE_DIR"
+  stage=$(mktemp -d "$CACHE_DIR/plugin-update.XXXXXX")
+  tarball="$stage/plugin.tar.gz"
+  echo "Downloading github.com/${GITHUB_REPO}@${GITHUB_BRANCH}" >&2
+  curl_get -o "$tarball" \
+    "https://codeload.github.com/${GITHUB_REPO}/tar.gz/refs/heads/${GITHUB_BRANCH}"
+  tar -xzf "$tarball" -C "$stage"
+  local src
+  src=$(find "$stage" -mindepth 1 -maxdepth 1 -type d | head -n1)
+  test -n "$src"
+  test -f "$src/plugin.json"
+  chmod +x "$src"/install.sh "$src"/uninstall.sh "$src"/scripts/*.sh "$src"/bin/* 2>/dev/null || true
+  install_plugin_from_dir "$src"
+  remote_sha=$(remote_plugin_commit || true)
+  rm -rf "$stage"
+  echo "Plugin updated from GitHub (${GITHUB_BRANCH}${remote_sha:+ @ $remote_sha}). Restart Antigravity to reload the Sidecar."
+}
+
 download_app_tarball() {
   local build=$1 url=$2
   local tarball="$CACHE_DIR/Antigravity-${build}.tar.gz"
@@ -191,4 +270,93 @@ sidecars[key] = entry
 p.write_text(json.dumps(cfg, indent=2) + "\n")
 print(f"enabled {key} in {p}")
 PY
+}
+
+disable_sidecar_config() {
+  mkdir -p "$HOME/.gemini/config"
+  python3 - <<'PY'
+import json
+from pathlib import Path
+
+p = Path.home() / ".gemini/config/config.json"
+if not p.exists():
+    print(f"no config at {p}")
+    raise SystemExit(0)
+try:
+    cfg = json.loads(p.read_text() or "{}")
+except json.JSONDecodeError:
+    print(f"skipping unreadable {p}")
+    raise SystemExit(0)
+sidecars = cfg.get("sidecars")
+if not isinstance(sidecars, dict):
+    print(f"no sidecars block in {p}")
+    raise SystemExit(0)
+removed = []
+for key in ("agy-linux-live-update/updater", "linux-updater/updater"):
+    if key in sidecars:
+        sidecars.pop(key, None)
+        removed.append(key)
+p.write_text(json.dumps(cfg, indent=2) + "\n")
+if removed:
+    print(f"removed sidecar keys {', '.join(removed)} from {p}")
+else:
+    print(f"no updater sidecar keys in {p}")
+PY
+}
+
+uninstall_this_plugin() {
+  if command -v agy >/dev/null 2>&1; then
+    agy plugin uninstall linux-updater >/dev/null 2>&1 || true
+    agy plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
+  else
+    echo "agy not found; removing plugin directory if present"
+    rm -rf "$HOME/.gemini/config/plugins/$PLUGIN_NAME"
+    rm -rf "$HOME/.gemini/config/plugins/linux-updater"
+  fi
+  disable_sidecar_config
+  # Sidecar runtime cache / settings
+  rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/antigravity/linux-updater"
+  rm -rf "$HOME/.gemini/antigravity/sidecar_data/agy-linux-live-update"
+  rm -rf "$HOME/.gemini/antigravity/sidecar_data/linux-updater"
+  rm -f "$HOME/.local/bin/update-antigravity"
+}
+
+uninstall_desktop_app() {
+  local helper="$_COMMON_DIR/uninstall-root.sh"
+  if ! command -v pkexec >/dev/null 2>&1; then
+    echo "pkexec not found; cannot remove system files under /opt and /usr/local" >&2
+    return 1
+  fi
+  # Best-effort stop before deleting /opt.
+  pkill -f '/opt/antigravity/antigravity' 2>/dev/null || true
+  sleep 1
+  pkexec bash "$helper"
+}
+
+uninstall_official_cli() {
+  # Official install.sh typically places `agy` on the user PATH.
+  # Leave ~/.gemini/antigravity-cli config data in place (user settings).
+  local removed=0
+  if [ -e "$HOME/.local/bin/agy" ] || [ -L "$HOME/.local/bin/agy" ]; then
+    rm -f "$HOME/.local/bin/agy"
+    echo "removed $HOME/.local/bin/agy"
+    removed=1
+  fi
+  if command -v agy >/dev/null 2>&1; then
+    local agy_path
+    agy_path=$(command -v agy)
+    case "$agy_path" in
+      "$HOME"/*)
+        rm -f "$agy_path"
+        echo "removed $agy_path"
+        removed=1
+        ;;
+      *)
+        echo "agy still on PATH at $agy_path (not under \$HOME); remove manually if desired" >&2
+        ;;
+    esac
+  fi
+  if [ "$removed" -eq 0 ]; then
+    echo "No user-local agy binary found"
+  fi
 }
