@@ -62,8 +62,9 @@ gather_status() {
 }
 
 print_status_text() {
-  echo "=== Linux Updater ==="
+  echo "=== agy-linux-live-update ==="
   echo "plugin: $PLUGIN_ROOT"
+  echo "arch : $(uname -m) ($REL_ARCH)"
   echo "App : local ${APP_LOCAL_VER:-?} (${APP_LOCAL_BUILD:-no build-id})  →  remote ${APP_REMOTE_VER} (${APP_REMOTE_BUILD})"
   echo "CLI : local ${CLI_LOCAL:-?}  →  remote ${CLI_REMOTE:-?}"
   if [ "$APP_NEEDS" -eq 1 ]; then

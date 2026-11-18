@@ -125,6 +125,11 @@ download_app_tarball() {
   local build=$1 url=$2
   local tarball="$CACHE_DIR/Antigravity-${build}.tar.gz"
   mkdir -p "$CACHE_DIR"
+  if [ -f "$tarball" ] && [ -s "$tarball" ]; then
+    echo "Using cached tarball: $tarball" >&2
+    printf '%s\n' "$tarball"
+    return 0
+  fi
   echo "Downloading $url" >&2
   curl -fL -A "$CURL_UA" --progress-bar -o "$tarball.partial" "$url"
   mv "$tarball.partial" "$tarball"

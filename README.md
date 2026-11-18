@@ -10,8 +10,8 @@
 # 克隆后
 git clone https://github.com/xxxizum1kxxx/agy-linux-live-update.git ~/tools/agy-linux-live-update
 cd ~/tools/agy-linux-live-update
-chmod +x install.sh scripts/*.sh
-./install.sh --yes
+chmod +x install.sh scripts/*.sh bin/update-antigravity
+./install.sh --yes                # 默认仅安装桌面 App
 ```
 
 或从本仓库直接跑（需已有 checkout）：
@@ -20,12 +20,14 @@ chmod +x install.sh scripts/*.sh
 ~/tools/agy-linux-live-update/install.sh --yes
 ```
 
-可选组合：
+可选组合（CLI / 插件需显式加 flag；默认不含 CLI）：
 
 ```bash
+./install.sh --app --cli --yes            # App + 官方 CLI
 ./install.sh --app --cli --plugin --yes   # App + CLI + 本插件
 ./install.sh --check                      # 只查看本地/远端版本
 ./install.sh --plugin --yes               # 仅安装插件并启用 Sidecar
+./install.sh --cli --yes                  # 仅 CLI
 ```
 
 提权写入 `/opt`、`/usr/local` 时会弹出 **pkexec**。

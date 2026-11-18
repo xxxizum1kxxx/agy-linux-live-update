@@ -2,8 +2,8 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "agy-linux-live-update",
   "displayName": "Linux Updater",
-  "version": "1.0.0",
-  "description": "Check and update the Linux Antigravity desktop App (/opt) and agy CLI from official Google downloads.",
+  "version": "1.1.0",
+  "description": "Check and update the Linux Antigravity desktop App (/opt) and agy CLI from official Google downloads. Includes root install.sh for FHS installs.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Check whether the Antigravity desktop App and agy CLI have updates using the agy-linux-live-update plugin scripts.",
@@ -11,8 +11,8 @@
     "Update only the agy CLI using the agy-linux-live-update plugin and the official install.sh."
   ],
   "author": {
-    "name": "wentao"
+    "name": "xxxizum1kxxx"
   },
   "license": "MIT",
-  "keywords": ["linux", "fedora", "update", "cli", "tarball", "antigravity"]
+  "keywords": ["linux", "fedora", "gnome", "kde", "update", "cli", "tarball", "install"]
 }

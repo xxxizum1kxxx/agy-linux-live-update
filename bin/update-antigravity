@@ -1,0 +1,83 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+# Resolve plugin scripts: prefer installed plugin, then source checkout.
+resolve_core() {
+  local candidates=(
+    "${HOME}/.gemini/config/plugins/agy-linux-live-update/scripts/update-core.sh"
+    "${HOME}/tools/agy-linux-live-update/scripts/update-core.sh"
+    # Legacy path (pre-rename)
+    "${HOME}/.gemini/config/plugins/linux-updater/scripts/update-core.sh"
+    "${HOME}/tools/linux-updater/scripts/update-core.sh"
+  )
+  # Also resolve relative to this wrapper when shipped inside the plugin tree.
+  local self_dir
+  self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  candidates+=(
+    "$self_dir/../scripts/update-core.sh"
+  )
+  local p
+  for p in "${candidates[@]}"; do
+    if [ -x "$p" ]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+CORE=$(resolve_core) || {
+  echo "agy-linux-live-update plugin scripts not found." >&2
+  echo "Install with: agy plugin install ~/tools/agy-linux-live-update" >&2
+  echo "Or run: ~/tools/agy-linux-live-update/install.sh --plugin --yes" >&2
+  exit 1
+}
+
+DO_CHECK=0
+DO_APP=0
+DO_CLI=0
+ASSUME_YES=0
+EXPLICIT=0
+ARGS=()
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) DO_CHECK=1 ;;
+    --app) DO_APP=1; EXPLICIT=1 ;;
+    --cli) DO_CLI=1; EXPLICIT=1 ;;
+    --yes|-y) ASSUME_YES=1 ;;
+    -h|--help)
+      exec "$CORE" --help
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: update-antigravity [--check] [--app] [--cli] [--yes]" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+if [ "$ASSUME_YES" -eq 1 ]; then
+  ARGS+=(--yes)
+fi
+if [ "$EXPLICIT" -eq 1 ]; then
+  if [ "$DO_APP" -eq 1 ]; then ARGS+=(--app); fi
+  if [ "$DO_CLI" -eq 1 ]; then ARGS+=(--cli); fi
+fi
+
+if [ "$DO_CHECK" -eq 1 ]; then
+  exec "$CORE" check "${ARGS[@]}"
+fi
+
+if [ "$EXPLICIT" -eq 0 ]; then
+  exec "$CORE" update "${ARGS[@]}"
+fi
+
+if [ "$DO_APP" -eq 1 ] && [ "$DO_CLI" -eq 1 ]; then
+  exec "$CORE" update "${ARGS[@]}"
+elif [ "$DO_APP" -eq 1 ]; then
+  exec "$CORE" update-app "${ARGS[@]}"
+else
+  exec "$CORE" update-cli "${ARGS[@]}"
+fi
