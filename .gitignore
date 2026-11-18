@@ -1,0 +1,5 @@
+*.partial
+*.tar.gz
+.DS_Store
+*~
+.cache/
