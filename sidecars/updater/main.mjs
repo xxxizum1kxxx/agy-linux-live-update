@@ -1,11 +1,15 @@
 import { spawn } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
+  rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SidecarApp } from 'sidecar_sdk';
@@ -320,6 +324,7 @@ async function refreshAndMaybeNotify({ notify = false } = {}) {
 }
 
 function cachedStatusResponse() {
+  recoverPluginJob();
   const cache = readCache();
   if (!cache?.status) return null;
   return {
@@ -377,6 +382,17 @@ app.api('/api/settings', async (data = {}) => {
 }, 'POST');
 
 // Run an update job and remember its output so the panel log survives reloads.
+function recordJob(kind, response, at = new Date().toISOString()) {
+  try {
+    writeCache({
+      ...(readCache() || {}),
+      lastJob: { kind, ...response, at },
+    });
+  } catch (err) {
+    console.warn('[linux-updater] failed to persist job log:', err);
+  }
+}
+
 async function runUpdateJob(kind, args, timeoutMs) {
   const result = await runCore(args, { timeoutMs });
   const response = {
@@ -384,15 +400,71 @@ async function runUpdateJob(kind, args, timeoutMs) {
     code: result.code,
     log: (result.stdout + '\n' + result.stderr).trim(),
   };
-  try {
-    writeCache({
-      ...(readCache() || {}),
-      lastJob: { kind, ...response, at: new Date().toISOString() },
-    });
-  } catch (err) {
-    console.warn('[linux-updater] failed to persist job log:', err);
-  }
+  recordJob(kind, response);
   return response;
+}
+
+/*
+ * Plugin self-update replaces this plugin's own directory, and Antigravity may
+ * restart (kill) this Sidecar when that happens. So the update runs:
+ *   - from a temporary copy of scripts/ (the originals are being replaced),
+ *   - in its own session (detached), so it survives this process exiting,
+ *   - writing its output and exit code to files, which a later Sidecar
+ *     start (or status request) turns into the Activity log entry.
+ */
+function pluginJobPaths() {
+  const dir = ensureDataDir();
+  return {
+    log: join(dir, 'plugin-update.log'),
+    exit: join(dir, 'plugin-update.exit'),
+  };
+}
+
+function readText(path) {
+  try {
+    return readFileSync(path, 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
+function recoverPluginJob() {
+  const { log, exit } = pluginJobPaths();
+  if (!existsSync(exit)) return;
+  const code = Number(readText(exit));
+  const at = statSync(exit).mtime.toISOString();
+  recordJob('plugin', { ok: code === 0, code, log: readText(log) }, at);
+  rmSync(exit, { force: true });
+}
+
+function runPluginUpdateDetached() {
+  return new Promise((resolve) => {
+    const { log, exit } = pluginJobPaths();
+    rmSync(exit, { force: true });
+    let runner;
+    try {
+      runner = mkdtempSync(join(tmpdir(), 'linux-updater-'));
+      cpSync(join(PLUGIN_ROOT, 'scripts'), join(runner, 'scripts'), { recursive: true });
+      cpSync(join(PLUGIN_ROOT, 'plugin.json'), join(runner, 'plugin.json'));
+    } catch (err) {
+      resolve({ ok: false, code: 1, log: `Failed to stage updater: ${err}` });
+      return;
+    }
+    const script =
+      'bash "$1" update-plugin --yes >"$2" 2>&1; code=$?; ' +
+      'echo "$code" >"$3"; rm -rf "$4"; exit "$code"';
+    const child = spawn(
+      'bash',
+      ['-c', script, 'bash', join(runner, 'scripts', 'update-core.sh'), log, exit, runner],
+      { detached: true, stdio: 'ignore', env: process.env }
+    );
+    child.on('error', (err) => resolve({ ok: false, code: 1, log: String(err) }));
+    child.on('close', (code) => {
+      // Still alive: report directly and consume the exit marker.
+      rmSync(exit, { force: true });
+      resolve({ ok: code === 0, code: code ?? 1, log: readText(log) });
+    });
+  });
 }
 
 app.api('/api/update-app', async () =>
@@ -403,9 +475,14 @@ app.api('/api/update-cli', async () =>
   runUpdateJob('cli', ['update-cli', '--yes'], 300_000)
 );
 
-app.api('/api/update-plugin', async () =>
-  runUpdateJob('plugin', ['update-plugin', '--yes'], 300_000)
-);
+app.api('/api/update-plugin', async () => {
+  const response = await runPluginUpdateDetached();
+  recordJob('plugin', response);
+  return response;
+});
+
+// A plugin update that outlived the previous Sidecar process is recorded now.
+recoverPluginJob();
 
 await app.run();
 

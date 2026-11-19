@@ -78,16 +78,13 @@ gather_status() {
   PLUGIN_REMOTE_VER=$(remote_plugin_version "$PLUGIN_REMOTE_FULL" || true)
   PLUGIN_NEEDS=0
   PLUGIN_LOCAL_AHEAD=0
+  # The version in plugin.json is the only update signal: pushes that do not
+  # bump it (docs, screenshots) never prompt users to update.
   if [ -n "$PLUGIN_REMOTE_VER" ] && [ -n "$PLUGIN_LOCAL_VER" ]; then
     if version_gt "$PLUGIN_REMOTE_VER" "$PLUGIN_LOCAL_VER"; then
       PLUGIN_NEEDS=1
     elif version_gt "$PLUGIN_LOCAL_VER" "$PLUGIN_REMOTE_VER"; then
       PLUGIN_LOCAL_AHEAD=1
-    elif [ -n "$PLUGIN_REMOTE_SHA" ] && [ -n "$PLUGIN_LOCAL_SHA" ] \
-      && [ "$PLUGIN_REMOTE_SHA" != "$PLUGIN_LOCAL_SHA" ] \
-      && version_ge "$PLUGIN_REMOTE_VER" "$PLUGIN_LOCAL_VER"; then
-      # Same version string, different commit on GitHub (docs/fix without bump).
-      PLUGIN_NEEDS=1
     fi
   elif [ -n "$PLUGIN_REMOTE_VER" ] && [ -z "$PLUGIN_LOCAL_VER" ]; then
     PLUGIN_NEEDS=1

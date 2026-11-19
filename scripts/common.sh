@@ -184,8 +184,11 @@ install_plugin_from_dir() {
     return 1
   fi
   agy plugin validate --strict "$src"
+  # Only remove the legacy plugin id. Never uninstall ourselves first:
+  # `agy plugin install` replaces an existing installation in place, while
+  # uninstalling makes Antigravity stop this plugin's Sidecar — and with it
+  # the process running this very update — leaving the plugin removed.
   agy plugin uninstall linux-updater >/dev/null 2>&1 || true
-  agy plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
   agy plugin install "$src"
   # Re-source PLUGIN_ROOT after install if we updated from a temp tree.
   if [ -d "$HOME/.gemini/config/plugins/$PLUGIN_NAME" ]; then
@@ -259,9 +262,8 @@ install_this_plugin() {
     return 1
   fi
   agy plugin validate --strict "$PLUGIN_ROOT"
-  # Replace any previous plugin id.
+  # Replace the legacy plugin id; `agy plugin install` replaces ours in place.
   agy plugin uninstall linux-updater >/dev/null 2>&1 || true
-  agy plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
   agy plugin install "$PLUGIN_ROOT"
   enable_sidecar_config
 }
