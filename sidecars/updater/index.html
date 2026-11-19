@@ -8,35 +8,44 @@
     <script src="/preload.js"></script>
     <style>
       /*
-       * Colors come from host theme tokens that preload.js writes on :root
-       * (--background, --foreground, --primary, ...). Fallbacks are only for
-       * opening the page outside Antigravity. data-theme is set from
-       * --background luminance (same approach as the Swarm board).
+       * Material 3 Expressive styling on top of host theme tokens.
+       * preload.js writes --background, --foreground, --primary, ... on :root;
+       * fallbacks only matter when the page is opened outside Antigravity.
        */
       :root {
         color-scheme: light dark;
 
-        --md-bg: var(--background, #f7f8fa);
+        --md-bg: var(--background, #f8f9fc);
         --md-fg: var(--foreground, #1a1c1e);
-        --md-card: var(--card, #ffffff);
         --md-primary: var(--primary, #1a73e8);
         --md-on-primary: var(--primary-foreground, #ffffff);
-        --md-border: var(--border, color-mix(in srgb, var(--md-fg) 12%, transparent));
-        --md-muted: var(--muted-foreground, color-mix(in srgb, var(--md-fg) 62%, transparent));
-
-        --md-surface: color-mix(in srgb, var(--md-fg) 5%, var(--md-bg));
-        --md-surface-high: color-mix(in srgb, var(--md-fg) 8%, var(--md-bg));
-        --md-primary-container: color-mix(in srgb, var(--md-primary) 18%, var(--md-bg));
-        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 78%, var(--md-fg));
-        --md-success: #1e8e3e;
-        --md-success-container: color-mix(in srgb, var(--md-success) 16%, var(--md-bg));
-        --md-warn: #e37400;
-        --md-warn-container: color-mix(in srgb, var(--md-warn) 16%, var(--md-bg));
         --md-error: var(--error, #d93025);
-        --md-error-container: color-mix(in srgb, var(--md-error) 14%, var(--md-bg));
 
-        --r-sm: 12px;
-        --r-md: 16px;
+        --md-surface-low: color-mix(in srgb, var(--md-fg) 4%, var(--md-bg));
+        --md-surface: color-mix(in srgb, var(--md-fg) 6%, var(--md-bg));
+        --md-surface-high: color-mix(in srgb, var(--md-fg) 9%, var(--md-bg));
+        --md-surface-highest: color-mix(in srgb, var(--md-fg) 13%, var(--md-bg));
+        --md-muted: var(--muted-foreground, color-mix(in srgb, var(--md-fg) 66%, var(--md-bg)));
+        --md-outline: color-mix(in srgb, var(--md-fg) 50%, var(--md-bg));
+        --md-outline-variant: color-mix(in srgb, var(--md-fg) 16%, var(--md-bg));
+
+        --md-primary-container: color-mix(in srgb, var(--md-primary) 16%, var(--md-bg));
+        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 72%, var(--md-fg));
+        --md-secondary-container: color-mix(in srgb, var(--md-primary) 10%, var(--md-surface));
+        --md-on-secondary-container: color-mix(in srgb, var(--md-primary) 38%, var(--md-fg));
+
+        /* Tertiary: hue-rotated primary (relative color below), mix as fallback. */
+        --md-tertiary: color-mix(in srgb, var(--md-primary) 45%, #b5179e);
+        --md-on-tertiary: var(--md-on-primary);
+        --md-tertiary-container: color-mix(in srgb, var(--md-tertiary) 16%, var(--md-bg));
+        --md-on-tertiary-container: color-mix(in srgb, var(--md-tertiary) 72%, var(--md-fg));
+
+        --md-error-container: color-mix(in srgb, var(--md-error) 14%, var(--md-bg));
+        --md-on-error-container: color-mix(in srgb, var(--md-error) 75%, var(--md-fg));
+
+        --r-xs: 4px;
+        --r-sm: 8px;
+        --r-md: 12px;
         --r-lg: 20px;
         --r-xl: 28px;
         --r-full: 999px;
@@ -44,20 +53,41 @@
         --font: var(--font-family, "Google Sans Flex", "Google Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
         --mono: var(--editor-font-family, "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
 
-        --spring: cubic-bezier(0.22, 1, 0.36, 1);
-        --spring-soft: cubic-bezier(0.34, 1.2, 0.64, 1);
-        --fast: 180ms;
-        --med: 320ms;
+        /*
+         * Springs sampled into linear() (M3 Expressive motion scheme).
+         * Spatial springs overshoot slightly; effect springs never do.
+         * fast: stiffness 800 / damping 0.6, default: 380 / 0.8,
+         * slow: 200 / 0.8, effect: 1600 / 1.0 (critically damped).
+         */
+        --spring-fast: linear(0, 0.0421, 0.1471, 0.2872, 0.4404, 0.5905, 0.7265, 0.842, 0.9342, 1.0031, 1.0503, 1.0789, 1.0924, 1.0944, 1.0882, 1.077, 1.0632, 1.0486, 1.0347, 1.0223, 1.0121, 1.004, 0.9981, 0.9942, 0.992, 0.9911, 0.9912, 0.9919, 0.9931, 0.9944, 0.9958, 0.9971, 1);
+        --spring-default: linear(0, 0.0285, 0.0994, 0.1946, 0.3008, 0.4087, 0.5119, 0.6066, 0.6904, 0.7627, 0.8233, 0.873, 0.9128, 0.9439, 0.9675, 0.985, 0.9974, 1.0057, 1.011, 1.0139, 1.0151, 1.015, 1.0142, 1.0129, 1.0114, 1.0097, 1.0081, 1.0066, 1.0053, 1.0041, 1.0031, 1.0023, 1);
+        --spring-slow: linear(0, 0.0277, 0.0968, 0.1898, 0.2941, 0.4005, 0.5027, 0.5968, 0.6807, 0.7533, 0.8147, 0.8653, 0.9062, 0.9383, 0.963, 0.9814, 0.9947, 1.0039, 1.0098, 1.0132, 1.0148, 1.0151, 1.0146, 1.0134, 1.012, 1.0104, 1.0088, 1.0072, 1.0058, 1.0046, 1.0035, 1.0026, 1);
+        --spring-effect: linear(0, 0.0315, 0.1057, 0.2002, 0.301, 0.3995, 0.4911, 0.5733, 0.6454, 0.7075, 0.7603, 0.8046, 0.8414, 0.8718, 0.8968, 0.9172, 0.9337, 0.9471, 0.9579, 0.9665, 0.9734, 0.979, 0.9834, 0.9869, 0.9897, 0.9919, 0.9936, 0.995, 0.9961, 0.9969, 0.9976, 0.9981, 1);
+        --dur-fast: 350ms;
+        --dur-default: 420ms;
+        --dur-slow: 570ms;
+        --dur-effect: 220ms;
+      }
+
+      @supports (color: oklch(from red l c h)) {
+        :root {
+          --md-tertiary: oklch(from var(--md-primary) l c calc(h + 60));
+        }
       }
 
       :root[data-theme="dark"] {
         color-scheme: dark;
-        --md-success: #7aae66;
-        --md-warn: #cab43e;
-        --md-surface: color-mix(in srgb, var(--md-fg) 7%, var(--md-bg));
-        --md-surface-high: color-mix(in srgb, var(--md-fg) 11%, var(--md-bg));
-        --md-primary-container: color-mix(in srgb, var(--md-primary) 24%, var(--md-bg));
-        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 55%, #fff);
+        --md-surface-low: color-mix(in srgb, var(--md-fg) 5%, var(--md-bg));
+        --md-surface: color-mix(in srgb, var(--md-fg) 8%, var(--md-bg));
+        --md-surface-high: color-mix(in srgb, var(--md-fg) 12%, var(--md-bg));
+        --md-surface-highest: color-mix(in srgb, var(--md-fg) 17%, var(--md-bg));
+        --md-primary-container: color-mix(in srgb, var(--md-primary) 26%, var(--md-bg));
+        --md-on-primary-container: color-mix(in srgb, var(--md-primary) 45%, var(--md-fg));
+        --md-secondary-container: color-mix(in srgb, var(--md-primary) 14%, var(--md-surface));
+        --md-tertiary-container: color-mix(in srgb, var(--md-tertiary) 24%, var(--md-bg));
+        --md-on-tertiary-container: color-mix(in srgb, var(--md-tertiary) 45%, var(--md-fg));
+        --md-error-container: color-mix(in srgb, var(--md-error) 22%, var(--md-bg));
+        --md-on-error-container: color-mix(in srgb, var(--md-error) 45%, var(--md-fg));
       }
 
       * { box-sizing: border-box; }
@@ -75,641 +105,982 @@
         color: var(--md-fg) !important;
         font-family: var(--font) !important;
         -webkit-font-smoothing: antialiased;
-        opacity: 0;
-        transform: translateY(8px);
-        animation: page-in 480ms var(--spring) forwards;
       }
+
+      [hidden] { display: none !important; }
 
       .page {
-        padding: 20px 16px 28px;
-      }
-
-      @keyframes page-in {
-        to { opacity: 1; transform: none; }
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      @keyframes pulse {
-        0%, 100% { opacity: 0.5; }
-        50% { opacity: 0.95; }
-      }
-
-      @keyframes badge-pop {
-        from { transform: scale(0.88); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-      }
-
-      @keyframes fade-up {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: none; }
-      }
-
-      .hero {
         display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        margin-bottom: 16px;
-        animation: fade-up 420ms var(--spring) both;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 100vh;
+        padding: 20px 16px 12px;
       }
 
-      .hero-logo {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--r-md);
+      /* ---------- entrance ---------- */
+
+      @keyframes rise {
+        from { transform: translateY(16px); }
+        to { transform: none; }
+      }
+
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .enter {
+        animation:
+          rise var(--dur-slow) var(--spring-slow) both,
+          fade-in var(--dur-effect) var(--spring-effect) both;
+        animation-delay: var(--d, 0ms), var(--d, 0ms);
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ---------- icons ---------- */
+
+      .icon {
+        width: 24px;
+        height: 24px;
         flex: 0 0 auto;
-        box-shadow: 0 1px 2px color-mix(in srgb, #000 10%, transparent);
+        fill: currentColor;
         display: block;
       }
 
-      .hero h1 {
-        margin: 0 0 4px;
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        line-height: 1.2;
-      }
+      .icon.sm { width: 18px; height: 18px; }
 
-      .hero .sub {
-        margin: 0;
-        color: var(--md-muted);
-        font-size: 13px;
-        line-height: 1.4;
-      }
+      /* ---------- state layer (hover / press overlay) ---------- */
 
-      .banner {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 12px 14px;
-        border-radius: var(--r-md);
-        background: var(--md-primary-container);
-        color: var(--md-on-primary-container);
-        font-size: 13px;
-        margin-bottom: 14px;
-        animation: fade-up 420ms var(--spring) 40ms both;
-      }
-
-      .banner-icon {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: color-mix(in srgb, var(--md-primary) 22%, transparent);
-        color: var(--md-primary);
-        display: grid;
-        place-items: center;
-        flex: 0 0 auto;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .status-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-height: 40px;
-        margin-bottom: 14px;
-        padding: 10px 14px;
-        border-radius: var(--r-lg);
-        background: var(--md-surface);
-        color: var(--md-muted);
-        font-size: 13px;
-        transition: background var(--fast) ease, color var(--fast) ease;
-        animation: fade-up 420ms var(--spring) 70ms both;
-      }
-
-      .status-bar.active {
-        background: var(--md-primary-container);
-        color: var(--md-on-primary-container);
-      }
-
-      .status-bar.success {
-        background: var(--md-success-container);
-        color: var(--md-fg);
-      }
-
-      .status-bar.warn {
-        background: var(--md-warn-container);
-        color: var(--md-fg);
-      }
-
-      .status-bar.err {
-        background: var(--md-error-container);
-        color: var(--md-fg);
-      }
-
-      .spinner {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
-        border-top-color: currentColor;
-        flex: 0 0 auto;
-        animation: spin 700ms linear infinite;
-        display: none;
-      }
-
-      .status-bar.active .spinner { display: inline-block; }
-
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-        opacity: 0.55;
-        flex: 0 0 auto;
-      }
-
-      .status-bar.active .status-dot { display: none; }
-      .status-bar.success .status-dot { background: var(--md-success); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-success) 22%, transparent); }
-      .status-bar.warn .status-dot { background: var(--md-warn); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-warn) 22%, transparent); }
-      .status-bar.err .status-dot { background: var(--md-error); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-error) 22%, transparent); }
-
-      .meta {
-        margin: -6px 0 14px;
-        font-size: 12px;
-        color: var(--md-muted);
-        min-height: 16px;
-      }
-
-      .grid {
-        display: grid;
-        gap: 12px;
-      }
-
-      .card {
-        background: var(--md-surface-high);
-        border-radius: var(--r-lg);
-        padding: 14px 16px;
+      .state-layer {
         position: relative;
+        isolation: isolate;
         overflow: hidden;
-        opacity: 0;
-        animation: fade-up 420ms var(--spring) forwards;
-        transition: transform var(--med) var(--spring), background var(--fast) ease;
       }
 
-      #app-card { animation-delay: 90ms; }
-      #cli-card { animation-delay: 140ms; }
-
-      .card.loading::after {
+      .state-layer::before {
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(
-          110deg,
-          transparent 20%,
-          color-mix(in srgb, var(--md-fg) 7%, transparent) 45%,
-          transparent 70%
-        );
-        background-size: 200% 100%;
-        animation: pulse 1.2s ease-in-out infinite;
+        background: currentColor;
+        opacity: 0;
         pointer-events: none;
+        z-index: -1;
+        transition: opacity var(--dur-effect) var(--spring-effect);
       }
 
-      .label {
-        color: var(--md-muted);
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.01em;
-        margin-bottom: 8px;
-      }
+      .state-layer:hover:not(:disabled)::before { opacity: 0.08; }
+      .state-layer:active:not(:disabled)::before { opacity: 0.12; }
 
-      .row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: baseline;
-        margin-top: 6px;
-        font-size: 13px;
-      }
-
-      .row span:first-child { color: var(--md-muted); }
-
-      .value {
-        font-variant-numeric: tabular-nums;
-        word-break: break-all;
-        text-align: right;
-        max-width: 70%;
-        transition: opacity var(--fast) ease;
-      }
-
-      .card.loading .value {
-        opacity: 0.45;
-        animation: pulse 1.1s ease-in-out infinite;
-      }
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 12px;
-        padding: 4px 12px;
-        border-radius: var(--r-full);
-        font-size: 12px;
-        font-weight: 600;
-        background: color-mix(in srgb, var(--md-fg) 6%, transparent);
-        color: var(--md-muted);
-        animation: badge-pop 280ms var(--spring-soft);
-      }
-
-      .badge.ok {
-        color: var(--md-success);
-        background: var(--md-success-container);
-      }
-
-      .badge.warn {
-        color: var(--md-warn);
-        background: var(--md-warn-container);
-      }
-
-      .badge.checking {
-        color: var(--md-on-primary-container);
-        background: var(--md-primary-container);
-      }
-
-      .badge .mini-spin {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
-        border-top-color: currentColor;
-        animation: spin 650ms linear infinite;
-      }
-
-      .btn-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2px;
-        margin: 16px 0 14px;
-        padding: 4px;
-        border-radius: var(--r-xl);
-        background: var(--md-surface);
-        animation: fade-up 420ms var(--spring) 160ms both;
-      }
+      /* ---------- buttons ---------- */
 
       button {
         appearance: none;
         border: none;
-        background: transparent;
-        color: var(--md-fg);
-        border-radius: var(--r-lg);
-        padding: 10px 14px;
-        cursor: pointer;
+        background: none;
+        color: inherit;
         font: inherit;
-        font-weight: 600;
-        font-size: 13px;
+        cursor: pointer;
+        margin: 0;
+        padding: 0;
+      }
+
+      button:focus-visible,
+      .switch input:focus-visible + .switch-track {
+        outline: 3px solid var(--md-primary);
+        outline-offset: 2px;
+      }
+
+      /* Pressed buttons morph from full round to a squircle (M3E shape morph). */
+      .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0;
-        min-height: 40px;
-        flex: 1 1 0;
-        min-width: 0;
-        position: relative;
+        gap: 8px;
+        height: 40px;
+        padding: 0 20px;
+        border-radius: var(--r-full);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
         transition:
-          background var(--fast) ease,
-          color var(--fast) ease,
-          opacity var(--fast) ease;
+          border-radius var(--dur-fast) var(--spring-fast),
+          background-color var(--dur-effect) var(--spring-effect),
+          color var(--dur-effect) var(--spring-effect),
+          opacity var(--dur-effect) var(--spring-effect);
       }
 
-      button:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--md-fg) 6%, transparent);
+      .btn:active:not(:disabled) { border-radius: var(--r-md); }
+
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.38;
       }
 
-      button:active:not(:disabled) {
-        background: color-mix(in srgb, var(--md-fg) 10%, transparent);
+      .btn.filled { background: var(--md-primary); color: var(--md-on-primary); }
+      .btn.tertiary { background: var(--md-tertiary); color: var(--md-on-tertiary); }
+      .btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+      .btn.text { color: var(--md-primary); padding: 0 12px; }
+
+      .icon-btn {
+        display: inline-grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--r-full);
+        color: var(--md-muted);
+        flex: 0 0 auto;
+        transition:
+          border-radius var(--dur-fast) var(--spring-fast),
+          background-color var(--dur-effect) var(--spring-effect),
+          color var(--dur-effect) var(--spring-effect),
+          opacity var(--dur-effect) var(--spring-effect);
       }
 
-      button.primary {
-        background: var(--md-primary);
-        color: var(--md-on-primary);
+      .icon-btn:active:not(:disabled) { border-radius: var(--r-md); }
+      .icon-btn:disabled { cursor: default; opacity: 0.38; }
+      .icon-btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+      .icon-btn.sm { width: 32px; height: 32px; }
+      .icon-btn.sm:active:not(:disabled) { border-radius: var(--r-sm); }
+      .icon-btn[aria-expanded="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+
+      @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .icon-btn.spun .icon { animation: spin-once var(--dur-slow) var(--spring-default); }
+
+      /* ---------- hero ---------- */
+
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 4px 0 8px;
       }
 
-      button.primary:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--md-primary) 88%, #fff);
+      .logo {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        flex: 0 0 auto;
+        --logo-fill: var(--md-primary-container);
+        --logo-ink: var(--md-on-primary-container);
       }
 
-      button.primary:active:not(:disabled) {
-        background: color-mix(in srgb, var(--md-primary) 80%, #000);
+      .logo[data-state="update"] { --logo-fill: var(--md-tertiary); --logo-ink: var(--md-on-tertiary); }
+      .logo[data-state="busy"] { --logo-fill: var(--md-primary); --logo-ink: var(--md-on-primary); }
+      .logo[data-state="error"] { --logo-fill: var(--md-error-container); --logo-ink: var(--md-on-error-container); }
+
+      .logo-shape {
+        position: absolute;
+        inset: 0;
+        width: 56px;
+        height: 56px;
+        overflow: visible;
       }
 
-      button.tonal {
+      .logo-shape path {
+        fill: var(--logo-fill);
+        transition:
+          d var(--dur-slow) var(--spring-default),
+          fill var(--dur-effect) var(--spring-effect);
+      }
+
+      .logo-shape.spinning { animation: spin 3.2s linear infinite; }
+
+      .logo-glyph {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        width: 24px;
+        height: 24px;
+        fill: var(--logo-ink);
+        opacity: 0;
+        transform: scale(0.4) rotate(-45deg);
+        transition:
+          transform var(--dur-default) var(--spring-fast),
+          opacity var(--dur-effect) var(--spring-effect),
+          fill var(--dur-effect) var(--spring-effect);
+      }
+
+      .logo-glyph.on { opacity: 1; transform: none; }
+
+      .hero-copy { flex: 1 1 auto; min-width: 0; }
+
+      .hero h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.25;
+      }
+
+      .hero-status {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: var(--md-muted);
+        line-height: 1.4;
+        /* Wrap instead of truncating so the "checked" time stays visible. */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+
+      .hero-status .meta { white-space: nowrap; }
+
+      .hero-status strong {
+        font-weight: 600;
+        color: var(--md-fg);
+        transition: color var(--dur-effect) var(--spring-effect);
+      }
+
+      .hero[data-state="update"] .hero-status strong { color: var(--md-tertiary); }
+      .hero[data-state="error"] .hero-status strong { color: var(--md-error); }
+      .hero[data-state="busy"] .hero-status strong { color: var(--md-primary); }
+
+      /* ---------- update cards ---------- */
+
+      .cards { display: grid; gap: 8px; }
+
+      .card {
+        background: var(--md-surface);
+        border-radius: var(--r-lg);
+        padding: 16px;
+        margin: 0;
+        transition:
+          background-color var(--dur-effect) var(--spring-effect),
+          border-radius var(--dur-default) var(--spring-default),
+          margin var(--dur-default) var(--spring-default),
+          padding var(--dur-default) var(--spring-default);
+      }
+
+      /* Card with a pending update grows outward a little and takes tertiary color. */
+      .card[data-state="update"],
+      .card[data-state="busy"] {
+        background: var(--md-tertiary-container);
+        color: var(--md-on-tertiary-container);
+        border-radius: var(--r-xl);
+        margin: 0 -4px;
+        padding: 18px 20px;
+      }
+
+      .card[data-state="busy"] {
         background: var(--md-primary-container);
         color: var(--md-on-primary-container);
       }
 
-      button.tonal:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--md-primary) 22%, var(--md-bg));
+      .card-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
 
-      button.tonal:active:not(:disabled) {
-        background: color-mix(in srgb, var(--md-primary) 28%, var(--md-bg));
+      .card-icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--r-md);
+        background: var(--md-secondary-container);
+        color: var(--md-on-secondary-container);
+        flex: 0 0 auto;
+        transition:
+          background-color var(--dur-effect) var(--spring-effect),
+          color var(--dur-effect) var(--spring-effect),
+          border-radius var(--dur-default) var(--spring-default);
       }
 
-      button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
+      .card[data-state="update"] .card-icon {
+        background: var(--md-tertiary);
+        color: var(--md-on-tertiary);
+        border-radius: var(--r-full);
       }
 
-      /* Spinner overlays the label so busy state never changes button width. */
-      button .btn-spin {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        width: 12px;
-        height: 12px;
-        margin-top: -6px;
-        border-radius: 50%;
-        border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
-        border-top-color: currentColor;
-        animation: spin 650ms linear infinite;
-        opacity: 0;
-        pointer-events: none;
+      .card[data-state="busy"] .card-icon {
+        background: var(--md-primary);
+        color: var(--md-on-primary);
+        border-radius: var(--r-full);
       }
 
-      button.busy .btn-spin { opacity: 1; }
-      button.busy .btn-label { opacity: 0.92; }
-      button .btn-label {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-      }
-
-      details.log {
-        border-radius: var(--r-lg);
-        background: var(--md-surface);
-        overflow: hidden;
-        animation: fade-up 420ms var(--spring) 200ms both;
-      }
-
-      details.log summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 12px 14px;
-        font-size: 13px;
+      .card-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 16px;
         font-weight: 600;
-        color: var(--md-muted);
-        user-select: none;
+        line-height: 1.3;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 24px;
+        padding: 0 10px 0 8px;
+        border-radius: var(--r-sm);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        background: var(--md-secondary-container);
+        color: var(--md-on-secondary-container);
+        transition:
+          background-color var(--dur-effect) var(--spring-effect),
+          color var(--dur-effect) var(--spring-effect);
+      }
+
+      .chip .icon { width: 16px; height: 16px; }
+      .chip.update { background: var(--md-tertiary); color: var(--md-on-tertiary); }
+      .chip.busy { background: var(--md-primary); color: var(--md-on-primary); }
+      .chip.muted { background: transparent; color: var(--md-muted); box-shadow: inset 0 0 0 1px var(--md-outline-variant); padding: 0 10px; }
+
+      @keyframes chip-pop {
+        from { transform: scale(0.85); }
+        to { transform: none; }
+      }
+
+      .chip.pop { animation: chip-pop var(--dur-fast) var(--spring-fast); }
+
+      .rows {
+        margin: 12px 0 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 16px;
+        font-size: 13px;
+      }
+
+      .rows dt { color: var(--md-muted); margin: 0; }
+      .card[data-state="update"] .rows dt,
+      .card[data-state="busy"] .rows dt { color: inherit; opacity: 0.75; }
+
+      .rows dd {
+        margin: 0;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        word-break: break-all;
+      }
+
+      @keyframes shimmer {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 1; }
+      }
+
+      .card[data-state="loading"] .rows dd,
+      .panel[data-state="loading"] .rows dd {
+        justify-self: end;
+        width: 96px;
+        height: 1em;
+        margin-top: 0.2em;
+        border-radius: var(--r-xs);
+        background: var(--md-surface-highest);
+        color: transparent;
+        animation: shimmer 1.4s ease-in-out infinite;
+      }
+
+      /* Collapsible region: grid rows 0fr → 1fr so height follows content. */
+      .collapse {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transition:
+          grid-template-rows var(--dur-default) var(--spring-default),
+          opacity var(--dur-effect) var(--spring-effect);
+      }
+
+      .collapse.open { grid-template-rows: 1fr; opacity: 1; }
+      .collapse > .collapse-inner { overflow: hidden; min-height: 0; }
+
+      .card-action-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 12px;
+        padding-top: 14px;
       }
 
-      details.log summary::-webkit-details-marker { display: none; }
+      .hint {
+        font-size: 12px;
+        line-height: 1.35;
+        opacity: 0.8;
+        min-width: 0;
+      }
 
-      details.log summary::after {
-        content: "▸";
-        transition: transform var(--fast) var(--spring);
+      .card-action .btn {
+        transform: scale(0.8);
+        transition:
+          transform var(--dur-default) var(--spring-fast),
+          border-radius var(--dur-fast) var(--spring-fast),
+          background-color var(--dur-effect) var(--spring-effect),
+          opacity var(--dur-effect) var(--spring-effect);
+      }
+
+      .card-action.open .btn { transform: none; }
+
+      /* ---------- wavy indeterminate progress ---------- */
+
+      .progress-wrap { padding-top: 14px; }
+
+      .wavy {
+        position: relative;
+        height: 10px;
+        overflow: hidden;
+      }
+
+      .wavy-bar {
+        position: absolute;
+        inset: 0;
+        background: var(--md-primary);
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
+        clip-path: inset(0 100% 0 0 round 4px);
+      }
+
+      .collapse.open .wavy-bar {
+        animation:
+          wave-phase 900ms linear infinite,
+          indet 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+      }
+
+      .collapse.open .wavy-bar.b { animation-delay: 0ms, -0.9s; }
+
+      @keyframes wave-phase {
+        to { -webkit-mask-position: 20px 50%; mask-position: 20px 50%; }
+      }
+
+      @keyframes indet {
+        0% { clip-path: inset(0 100% 0 0 round 4px); }
+        55% { clip-path: inset(0 15% 0 35% round 4px); }
+        100% { clip-path: inset(0 0 0 100% round 4px); }
+      }
+
+      .progress-text {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .progress-text .hint { text-align: right; }
+
+      /* ---------- segmented list (settings + log) ---------- */
+
+      .list { display: grid; gap: 2px; margin-top: 4px; }
+
+      .list-item {
+        background: var(--md-surface-low);
+        border-radius: var(--r-xs);
+        overflow: hidden;
+      }
+
+      .list-item:first-child { border-top-left-radius: var(--r-lg); border-top-right-radius: var(--r-lg); }
+      .list-item:last-child { border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: var(--r-lg); }
+
+      .list-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        min-height: 64px;
+        padding: 10px 16px;
+        text-align: left;
+      }
+
+      .list-row > .icon { color: var(--md-muted); }
+
+      .list-copy { flex: 1 1 auto; min-width: 0; }
+      .list-copy strong { display: block; font-size: 14px; font-weight: 600; }
+      .list-copy span { display: block; font-size: 12px; color: var(--md-muted); line-height: 1.4; }
+
+      .chevron {
         color: var(--md-muted);
+        transition: transform var(--dur-default) var(--spring-default);
       }
 
-      details.log[open] summary::after {
-        transform: rotate(90deg);
-      }
+      [aria-expanded="true"] > .chevron { transform: rotate(180deg); }
 
-      details.log .log-body {
-        padding: 0 14px 14px;
-      }
+      .log-body { padding: 0 16px 16px; }
 
       pre {
         margin: 0;
-        max-height: 220px;
+        max-height: 240px;
         overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
-        font: 12px/1.45 var(--mono);
+        font: 12px/1.5 var(--mono);
         color: var(--md-muted);
-        background: color-mix(in srgb, var(--md-fg) 3%, transparent);
-        border-radius: var(--r-sm);
+        background: var(--md-surface);
+        border-radius: var(--r-md);
         padding: 10px 12px;
       }
 
       .error {
-        color: var(--md-error);
-        margin-top: 10px;
-        font-size: 13px;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
         align-items: center;
-      }
-
-      .error[hidden] { display: none; }
-
-      .linkish {
-        appearance: none;
-        border: none;
-        background: transparent;
-        color: var(--md-primary);
-        font: inherit;
-        font-weight: 600;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 8px 8px 8px 12px;
+        border-radius: var(--r-md);
+        background: var(--md-error-container);
+        color: var(--md-on-error-container);
         font-size: 13px;
-        cursor: pointer;
-        padding: 0;
-        min-height: auto;
-        flex: 0 0 auto;
-        border-radius: 0;
       }
 
-      .linkish:hover:not(:disabled) {
-        background: transparent;
-        text-decoration: underline;
-      }
+      .error span { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+      .error .btn { height: 32px; padding: 0 14px; color: var(--md-on-error-container); }
 
-      .settings-row {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 14px;
-        margin: 0 0 14px;
-        padding: 12px 14px;
-        border-radius: var(--r-lg);
-        background: var(--md-surface);
-        animation: fade-up 420ms var(--spring) 180ms both;
-      }
-
-      .settings-copy {
-        min-width: 0;
-        flex: 1 1 auto;
-      }
-
-      .settings-copy strong {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 2px;
-      }
-
-      .settings-copy span {
-        display: block;
-        font-size: 12px;
-        color: var(--md-muted);
-        line-height: 1.4;
-      }
+      /* ---------- M3 switch ---------- */
 
       .switch {
         position: relative;
-        width: 48px;
-        height: 28px;
+        width: 52px;
+        height: 32px;
         flex: 0 0 auto;
-        margin-top: 2px;
       }
 
       .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
         position: absolute;
+        inset: 0;
+        margin: 0;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 1;
       }
 
       .switch-track {
         position: absolute;
         inset: 0;
         border-radius: var(--r-full);
-        background: color-mix(in srgb, var(--md-fg) 18%, transparent);
-        cursor: pointer;
-        transition: background var(--fast) ease;
+        background: var(--md-surface-highest);
+        box-shadow: inset 0 0 0 2px var(--md-outline);
+        transition:
+          background-color var(--dur-effect) var(--spring-effect),
+          box-shadow var(--dur-effect) var(--spring-effect);
       }
 
-      .switch-track::after {
-        content: "";
+      .switch-thumb {
         position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: var(--md-card, #fff);
-        box-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent);
-        transition: transform var(--med) var(--spring);
+        top: 50%;
+        left: 16px;
+        width: 16px;
+        height: 16px;
+        border-radius: var(--r-full);
+        background: var(--md-outline);
+        transform: translate(-50%, -50%);
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+        transition:
+          left var(--dur-fast) var(--spring-fast),
+          width var(--dur-fast) var(--spring-fast),
+          height var(--dur-fast) var(--spring-fast),
+          background-color var(--dur-effect) var(--spring-effect);
       }
 
-      .switch input:checked + .switch-track {
-        background: var(--md-primary);
+      .switch-thumb .icon {
+        width: 16px;
+        height: 16px;
+        fill: var(--md-on-primary-container);
+        opacity: 0;
+        transform: scale(0.5);
+        transition:
+          opacity var(--dur-effect) var(--spring-effect),
+          transform var(--dur-fast) var(--spring-fast);
       }
 
-      .switch input:checked + .switch-track::after {
-        transform: translateX(20px);
+      .switch input:checked + .switch-track { background: var(--md-primary); box-shadow: none; }
+      .switch input:checked ~ .switch-thumb { left: 36px; width: 24px; height: 24px; background: var(--md-on-primary); }
+      .switch input:checked ~ .switch-thumb .icon { opacity: 1; transform: none; }
+      .switch input:active ~ .switch-thumb { width: 28px; height: 28px; }
+      .switch input:not(:checked):hover ~ .switch-thumb { background: var(--md-muted); }
+
+      /* ---------- footer (plugin self-update) ---------- */
+
+      .spacer { flex: 1 1 auto; }
+
+      .panel {
+        background: var(--md-surface);
+        border-radius: var(--r-lg);
+        padding: 16px;
+        margin-bottom: 4px;
       }
 
-      .switch input:focus-visible + .switch-track {
-        outline: 2px solid var(--md-primary);
-        outline-offset: 2px;
+      .panel-head { display: flex; align-items: center; gap: 10px; }
+      .panel-head strong { flex: 1 1 auto; font-size: 14px; font-weight: 600; }
+
+      .panel-note {
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: var(--md-muted);
+        word-break: break-all;
       }
 
-      .hidden { display: none !important; }
+      .panel-note.ok { color: var(--md-primary); font-weight: 600; word-break: normal; }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0 0 4px;
+        border-top: 1px solid var(--md-outline-variant);
+      }
+
+      .footer-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 12px;
+        color: var(--md-muted);
+        font-variant-numeric: tabular-nums;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .badge-host { position: relative; }
+
+      .badge-dot {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 8px;
+        height: 8px;
+        border-radius: var(--r-full);
+        background: var(--md-error);
+        box-shadow: 0 0 0 2px var(--md-bg);
+        transform: scale(0);
+        transition: transform var(--dur-default) var(--spring-fast);
+        pointer-events: none;
+      }
+
+      .badge-dot.on { transform: scale(1); }
+
+      /* ---------- dialog ---------- */
+
+      dialog {
+        border: none;
+        padding: 0;
+        background: transparent;
+        color: var(--md-fg);
+        max-width: min(360px, calc(100vw - 32px));
+        width: 100%;
+        overflow: visible;
+      }
+
+      dialog::backdrop { background: color-mix(in srgb, #000 36%, transparent); }
+
+      .dlg-surface {
+        background: var(--md-surface-high);
+        border-radius: var(--r-xl);
+        padding: 24px;
+        box-shadow: 0 8px 28px color-mix(in srgb, #000 24%, transparent);
+      }
+
+      dialog[open] .dlg-surface {
+        animation:
+          dlg-in var(--dur-slow) var(--spring-default) both,
+          fade-in 120ms linear both;
+      }
+
+      dialog[open]::backdrop { animation: fade-in var(--dur-effect) var(--spring-effect) both; }
+
+      dialog.closing .dlg-surface { animation: dlg-out 200ms cubic-bezier(0.3, 0, 0.8, 0.15) both; }
+      dialog.closing::backdrop { animation: fade-out 200ms linear both; }
+
+      @keyframes dlg-in {
+        from { transform: translate(var(--fx, 0), var(--fy, 0)) scale(0.3); }
+        to { transform: none; }
+      }
+
+      @keyframes dlg-out {
+        from { transform: none; opacity: 1; }
+        to { transform: translate(var(--fx, 0), var(--fy, 0)) scale(0.6); opacity: 0; }
+      }
+
+      @keyframes fade-out { to { opacity: 0; } }
+
+      .dlg-icon {
+        display: grid;
+        place-items: center;
+        margin: 0 auto 16px;
+        color: var(--md-tertiary);
+      }
+
+      .dlg-surface h2 {
+        margin: 0 0 12px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .dlg-body { margin: 0; font-size: 14px; color: var(--md-muted); }
+
+      .dlg-versions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0 0;
+        padding: 12px;
+        border-radius: var(--r-lg);
+        background: var(--md-surface-highest);
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        text-align: center;
+        word-break: break-all;
+      }
+
+      .dlg-versions .to { color: var(--md-tertiary); }
+      .dlg-versions .icon { color: var(--md-muted); }
+
+      .dlg-note {
+        display: flex;
+        gap: 10px;
+        margin: 12px 0 0;
+        font-size: 12px;
+        color: var(--md-muted);
+      }
+
+      .dlg-note .icon { width: 18px; height: 18px; }
+
+      .dlg-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 24px;
+      }
+
+      /* ---------- reduced motion ---------- */
 
       @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
+        *, *::before, *::after, ::backdrop {
           animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
           transition-duration: 0.01ms !important;
         }
-        body { opacity: 1; transform: none; }
-        .card { opacity: 1; }
-        .card.loading::after { display: none; }
+        .wavy-bar { clip-path: none !important; }
       }
     </style>
   </head>
   <body>
+    <!-- Icon sprite (Material icons, inline so the panel works offline). -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
+      <symbol id="i-priority" viewBox="0 0 24 24"><path d="M10.5 4h3v10h-3zM10.5 17h3v3h-3z"/></symbol>
+      <symbol id="i-desktop" viewBox="0 0 24 24"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.89-2-2-2zm0 14H4V8h16v10zm-2-1h-6v-2h6v2zM7.5 17l-1.41-1.41L8.67 13l-2.59-2.59L7.5 9l4 4-4 4z"/></symbol>
+      <symbol id="i-extension" viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></symbol>
+      <symbol id="i-log" viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></symbol>
+    </svg>
+
     <div class="page">
-    <header class="hero">
-      <svg class="hero-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="48" height="48" role="img" aria-label="Linux Updater">
-        <rect width="128" height="128" rx="24" fill="#1a73e8"/>
-        <path fill="#fff" d="M64 28c-2.2 0-4 1.8-4 4v44.2l-14.6-14.6a4 4 0 1 0-5.7 5.7l21.5 21.5a4 4 0 0 0 5.7 0l21.5-21.5a4 4 0 1 0-5.7-5.7L68 76.2V32c0-2.2-1.8-4-4-4z"/>
-        <rect x="36" y="96" width="56" height="8" rx="4" fill="#fff" opacity=".9"/>
-      </svg>
-      <div>
-        <h1>Linux Updater</h1>
-        <p class="sub">Keep the desktop App (/opt) and agy CLI current from official Google downloads.</p>
-      </div>
-    </header>
+      <header class="hero enter" id="hero" data-state="idle">
+        <div class="logo" id="logo" data-state="none" aria-hidden="true">
+          <svg class="logo-shape" id="logo-shape" viewBox="0 0 56 56"><path id="logo-path" /></svg>
+          <svg class="logo-glyph" data-glyph="download" viewBox="0 0 24 24"><use href="#i-download" /></svg>
+          <svg class="logo-glyph" data-glyph="check" viewBox="0 0 24 24"><use href="#i-check" /></svg>
+          <svg class="logo-glyph" data-glyph="priority" viewBox="0 0 24 24"><use href="#i-priority" /></svg>
+        </div>
+        <div class="hero-copy">
+          <h1>Linux Updater</h1>
+          <p class="hero-status" id="hero-status" aria-live="polite"><strong>Ready</strong></p>
+        </div>
+        <button type="button" class="icon-btn tonal state-layer" id="btn-check" aria-label="Check for updates" title="Check for updates">
+          <svg class="icon"><use href="#i-refresh" /></svg>
+        </button>
+      </header>
 
-    <div class="banner" role="note">
-      <span class="banner-icon" aria-hidden="true">i</span>
-      <span>Updating the App quits Antigravity and prompts for pkexec. Relaunch the app afterward.</span>
-    </div>
+      <main class="cards">
+        <section class="card enter" id="app-card" data-state="loading" style="--d: 60ms">
+          <div class="card-head">
+            <span class="card-icon"><svg class="icon"><use href="#i-desktop" /></svg></span>
+            <span class="card-title">Desktop App</span>
+            <span class="chip muted" data-role="chip">Checking</span>
+          </div>
+          <dl class="rows">
+            <dt>Installed</dt><dd data-role="local">—</dd>
+            <dt>Latest</dt><dd data-role="remote">—</dd>
+          </dl>
+          <div class="collapse card-action" data-role="action" inert>
+            <div class="collapse-inner">
+              <div class="card-action-row">
+                <span class="hint">Quits Antigravity and asks for pkexec</span>
+                <button type="button" class="btn tertiary state-layer" id="btn-app">
+                  <svg class="icon sm"><use href="#i-download" /></svg>Update
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="collapse" data-role="progress" inert>
+            <div class="collapse-inner">
+              <div class="progress-wrap">
+                <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                <div class="progress-text">
+                  <span data-role="elapsed">Updating… 0:00</span>
+                  <span class="hint">pkexec may prompt for your password</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <div class="status-bar" id="status-bar" aria-live="polite">
-      <span class="spinner" aria-hidden="true"></span>
-      <span class="status-dot" aria-hidden="true"></span>
-      <span id="status-text">Ready</span>
-    </div>
-    <div class="meta" id="cache-meta"></div>
+        <section class="card enter" id="cli-card" data-state="loading" style="--d: 110ms">
+          <div class="card-head">
+            <span class="card-icon"><svg class="icon"><use href="#i-terminal" /></svg></span>
+            <span class="card-title">CLI (agy)</span>
+            <span class="chip muted" data-role="chip">Checking</span>
+          </div>
+          <dl class="rows">
+            <dt>Installed</dt><dd data-role="local">—</dd>
+            <dt>Latest</dt><dd data-role="remote">—</dd>
+          </dl>
+          <div class="collapse card-action" data-role="action" inert>
+            <div class="collapse-inner">
+              <div class="card-action-row">
+                <span class="hint">Runs the official install script</span>
+                <button type="button" class="btn tertiary state-layer" id="btn-cli">
+                  <svg class="icon sm"><use href="#i-download" /></svg><span data-role="cli-label">Update</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="collapse" data-role="progress" inert>
+            <div class="collapse-inner">
+              <div class="progress-wrap">
+                <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                <div class="progress-text">
+                  <span data-role="elapsed">Updating… 0:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
 
-    <div class="grid">
-      <section class="card" id="app-card">
-        <div class="label">Desktop App</div>
-        <div class="row"><span>Local</span><span class="value" id="app-local">…</span></div>
-        <div class="row"><span>Remote</span><span class="value" id="app-remote">…</span></div>
-        <span class="badge checking" id="app-badge"><span class="mini-spin" aria-hidden="true"></span>checking</span>
-      </section>
-      <section class="card" id="cli-card">
-        <div class="label">CLI (agy)</div>
-        <div class="row"><span>Local</span><span class="value" id="cli-local">…</span></div>
-        <div class="row"><span>Remote</span><span class="value" id="cli-remote">…</span></div>
-        <span class="badge checking" id="cli-badge"><span class="mini-spin" aria-hidden="true"></span>checking</span>
-      </section>
-      <section class="card" id="plugin-card">
-        <div class="label">Plugin (GitHub)</div>
-        <div class="row"><span>Local</span><span class="value" id="plugin-local">…</span></div>
-        <div class="row"><span>Remote</span><span class="value" id="plugin-remote">…</span></div>
-        <span class="badge checking" id="plugin-badge"><span class="mini-spin" aria-hidden="true"></span>checking</span>
-      </section>
-    </div>
-
-    <div class="btn-group" role="group" aria-label="Update actions">
-      <button type="button" class="tonal" id="btn-check">
-        <span class="btn-spin" aria-hidden="true"></span>
-        <span class="btn-label">Check</span>
-      </button>
-      <button type="button" class="primary" id="btn-app" disabled>
-        <span class="btn-spin" aria-hidden="true"></span>
-        <span class="btn-label">Update App</span>
-      </button>
-      <button type="button" class="primary" id="btn-cli" disabled>
-        <span class="btn-spin" aria-hidden="true"></span>
-        <span class="btn-label">Update CLI</span>
-      </button>
-      <button type="button" class="primary" id="btn-plugin" disabled>
-        <span class="btn-spin" aria-hidden="true"></span>
-        <span class="btn-label">Update Plugin</span>
-      </button>
-    </div>
-
-    <div class="settings-row">
-      <div class="settings-copy">
-        <strong>Notify on every startup</strong>
-        <span id="notify-hint">Off: notify only when updates are available. On: always notify with current status at startup.</span>
-      </div>
-      <label class="switch" title="Notify on every startup">
-        <input type="checkbox" id="notify-every" />
-        <span class="switch-track" aria-hidden="true"></span>
-      </label>
-    </div>
-
-    <details class="log" id="log-details">
-      <summary>Log</summary>
-      <div class="log-body">
-        <pre id="log">Ready.</pre>
-        <div class="error" id="error" hidden>
-          <span id="error-text"></span>
-          <button type="button" class="linkish" id="btn-retry">Retry</button>
+      <div class="list enter" style="--d: 160ms">
+        <div class="list-item">
+          <label class="list-row">
+            <svg class="icon"><use href="#i-bell" /></svg>
+            <span class="list-copy">
+              <strong>Notify on every startup</strong>
+              <span id="notify-hint">Off: notify only when updates are available.</span>
+            </span>
+            <span class="switch">
+              <input type="checkbox" role="switch" id="notify-every" />
+              <span class="switch-track" aria-hidden="true"></span>
+              <span class="switch-thumb" aria-hidden="true"><svg class="icon"><use href="#i-check" /></svg></span>
+            </span>
+          </label>
+        </div>
+        <div class="list-item">
+          <button type="button" class="list-row state-layer" id="btn-log" aria-expanded="false" aria-controls="log-collapse">
+            <svg class="icon"><use href="#i-log" /></svg>
+            <span class="list-copy">
+              <strong>Activity log</strong>
+              <span>Output of the last check or update</span>
+            </span>
+            <svg class="icon chevron"><use href="#i-expand" /></svg>
+          </button>
+          <div class="collapse" id="log-collapse" inert>
+            <div class="collapse-inner">
+              <div class="log-body">
+                <pre id="log">Ready.</pre>
+                <div class="error" id="error" hidden>
+                  <span id="error-text"></span>
+                  <button type="button" class="btn text state-layer" id="btn-retry">Retry</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </details>
+
+      <div class="spacer"></div>
+
+      <div class="collapse" id="plugin-collapse" inert>
+        <div class="collapse-inner">
+          <section class="panel" id="plugin-panel" data-state="loading" aria-label="Plugin">
+            <div class="panel-head">
+              <strong>Linux Updater plugin</strong>
+              <span class="chip muted" data-role="chip">Checking</span>
+            </div>
+            <dl class="rows">
+              <dt>Installed</dt><dd data-role="local">—</dd>
+              <dt>Latest</dt><dd data-role="remote">—</dd>
+            </dl>
+            <p class="panel-note" id="plugin-note"></p>
+            <div class="collapse card-action" data-role="action" inert>
+              <div class="collapse-inner">
+                <div class="card-action-row">
+                  <span class="hint">Restart Antigravity afterward</span>
+                  <button type="button" class="btn tonal state-layer" id="btn-plugin">
+                    <svg class="icon sm"><use href="#i-download" /></svg>Update plugin
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="collapse" data-role="progress" inert>
+              <div class="collapse-inner">
+                <div class="progress-wrap">
+                  <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                  <div class="progress-text"><span data-role="elapsed">Updating… 0:00</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="footer enter" style="--d: 200ms">
+        <span class="footer-text" id="footer-text">Linux Updater</span>
+        <span class="badge-host">
+          <button type="button" class="icon-btn sm state-layer" id="btn-plugin-panel" aria-expanded="false" aria-controls="plugin-collapse" aria-label="Plugin version and updates" title="Plugin version and updates">
+            <svg class="icon sm"><use href="#i-extension" /></svg>
+          </button>
+          <span class="badge-dot" id="plugin-badge"></span>
+        </span>
+      </footer>
     </div>
 
+    <dialog id="dlg" aria-labelledby="dlg-title">
+      <div class="dlg-surface">
+        <div class="dlg-icon"><svg class="icon"><use href="#i-download" /></svg></div>
+        <h2 id="dlg-title"></h2>
+        <p class="dlg-body" id="dlg-body"></p>
+        <div class="dlg-versions" id="dlg-versions">
+          <span id="dlg-from"></span>
+          <svg class="icon sm"><use href="#i-arrow" /></svg>
+          <span class="to" id="dlg-to"></span>
+        </div>
+        <p class="dlg-note" id="dlg-note"><svg class="icon"><use href="#i-lock" /></svg><span id="dlg-note-text"></span></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn text state-layer" id="dlg-cancel">Cancel</button>
+          <button type="button" class="btn filled state-layer" id="dlg-ok"></button>
+        </div>
+      </div>
+    </dialog>
+
     <script>
+      const $ = (id) => document.getElementById(id);
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      const SPRING_DEFAULT = getComputedStyle(document.documentElement)
+        .getPropertyValue('--spring-default').trim() || 'ease-out';
+
+      // ---------- theme ----------
+
       // Mark light/dark from host --background (preload writes tokens on :root).
       function syncScheme() {
         const probe = document.createElement('span');
         probe.style.cssText =
-          'position:absolute;visibility:hidden;color:var(--background, #f7f8fa)';
+          'position:absolute;visibility:hidden;color:var(--background, #f8f9fc)';
         document.documentElement.appendChild(probe);
         const c = getComputedStyle(probe).color;
         probe.remove();
@@ -726,58 +1097,112 @@
         attributeFilter: ['style'],
       });
 
-      const $ = (id) => document.getElementById(id);
-      const ACTION_LABELS = {
-        '/api/status': 'Checking for updates…',
-        '/api/update-app': 'Updating desktop App…',
-        '/api/update-cli': 'Updating CLI…',
-        '/api/update-plugin': 'Updating plugin from GitHub…',
-      };
-      const BUTTON_IDLE = {
-        'btn-check': 'Check',
-        'btn-app': 'Update App',
-        'btn-cli': 'Update CLI',
-        'btn-plugin': 'Update Plugin',
-      };
+      // ---------- shape-morphing logo (M3E loading indicator) ----------
 
-      let lastStatus = null;
-      let busy = false;
-      let settings = { notifyEveryStartup: false };
+      // Shapes are polar curves r(θ) = R·(1 − amp·(1 − cos nθ)/2) sampled at the
+      // same point count, so CSS can interpolate `d` between any two of them.
+      const SHAPES = {
+        circle: [0, 0],
+        cookie9: [9, 0.16],
+        cookie4: [4, 0.22],
+        softburst: [10, 0.1],
+        pentagon: [5, 0.12],
+        pill: [2, 0.3],
+        sunny: [8, 0.08],
+        oval: [2, 0.14],
+      };
+      const LOADING_SEQUENCE = ['softburst', 'cookie9', 'pentagon', 'pill', 'sunny', 'cookie4', 'oval'];
+      const supportsCssD = CSS.supports('d', 'path("M0 0")');
+      const shapeCache = {};
 
-      function setStatus(mode, text) {
-        const bar = $('status-bar');
-        bar.classList.remove('active', 'success', 'warn', 'err');
-        if (mode) bar.classList.add(mode);
-        $('status-text').textContent = text;
+      function shapePath(name) {
+        if (shapeCache[name]) return shapeCache[name];
+        const [n, amp] = SHAPES[name];
+        const N = 120, C = 28, R = 26;
+        let d = '';
+        for (let i = 0; i < N; i++) {
+          const t = (i / N) * Math.PI * 2 - Math.PI / 2;
+          const r = R * (1 - (amp * (1 - Math.cos(n * (t + Math.PI / 2)))) / 2);
+          d += (i ? 'L' : 'M') + (C + r * Math.cos(t)).toFixed(2) + ' ' + (C + r * Math.sin(t)).toFixed(2);
+        }
+        return (shapeCache[name] = d + 'Z');
       }
 
-      function setCacheMeta(checkedAt, cached) {
-        const el = $('cache-meta');
-        if (!checkedAt) {
-          el.textContent = '';
+      let currentShape = null;
+      function setShape(name) {
+        if (currentShape === name) return;
+        currentShape = name;
+        const path = $('logo-path');
+        const d = shapePath(name);
+        if (supportsCssD) path.style.d = `path("${d}")`;
+        else path.setAttribute('d', d);
+      }
+      $('logo-path').setAttribute('d', shapePath('circle'));
+
+      let morphTimer = null;
+      let morphIndex = 0;
+      function setLogo(state) {
+        const logo = $('logo');
+        if (logo.dataset.state === state) return;
+        logo.dataset.state = state;
+
+        const glyph = { idle: 'download', ok: 'check', update: 'download', error: 'priority' }[state];
+        logo.querySelectorAll('.logo-glyph').forEach((g) => {
+          g.classList.toggle('on', g.dataset.glyph === glyph);
+        });
+
+        const spinner = $('logo-shape');
+        if (state === 'busy') {
+          if (!morphTimer) {
+            spinner.getAnimations().forEach((a) => a.cancel());
+            if (!reduceMotion.matches) spinner.classList.add('spinning');
+            const step = () => {
+              setShape(LOADING_SEQUENCE[morphIndex++ % LOADING_SEQUENCE.length]);
+            };
+            step();
+            if (!reduceMotion.matches) morphTimer = setInterval(step, 650);
+          }
           return;
         }
-        const when = new Date(checkedAt);
-        const stamp = Number.isNaN(when.getTime())
-          ? checkedAt
-          : when.toLocaleString();
-        el.textContent = cached
-          ? `Showing cached result · checked ${stamp}`
-          : `Last checked ${stamp}`;
+
+        if (morphTimer) {
+          clearInterval(morphTimer);
+          morphTimer = null;
+          // Settle the rotation instead of snapping back to 0°.
+          const m = new DOMMatrix(getComputedStyle(spinner).transform);
+          const angle = ((Math.atan2(m.b, m.a) * 180) / Math.PI + 360) % 360;
+          spinner.classList.remove('spinning');
+          if (!reduceMotion.matches && angle > 1) {
+            spinner.animate(
+              [{ transform: `rotate(${angle}deg)` }, { transform: 'rotate(360deg)' }],
+              { duration: 570, easing: SPRING_DEFAULT }
+            );
+          }
+        }
+        setShape(state === 'update' ? 'cookie9' : state === 'error' ? 'cookie4' : 'circle');
       }
 
-      function applySettings(next) {
-        settings = {
-          notifyEveryStartup: Boolean(next?.notifyEveryStartup),
-        };
-        const toggle = $('notify-every');
-        if (toggle.checked !== settings.notifyEveryStartup) {
-          toggle.checked = settings.notifyEveryStartup;
-        }
-        $('notify-hint').textContent = settings.notifyEveryStartup
-          ? 'On: always notify with current status at startup.'
-          : 'Off: notify only when updates are available.';
-      }
+      // ---------- state ----------
+
+      const JOBS = {
+        app: { path: '/api/update-app', running: 'Updating Desktop App…', done: 'App updated · relaunch Antigravity' },
+        cli: { path: '/api/update-cli', running: 'Updating CLI…', done: 'CLI updated' },
+        plugin: { path: '/api/update-plugin', running: 'Updating plugin…', done: 'Plugin updated · restart Antigravity to reload this panel' },
+      };
+
+      const state = {
+        status: null,
+        checkedAt: null,
+        checking: false,
+        job: null,
+        jobStart: 0,
+        error: null,
+        flash: null, // { kind, text } after a successful update
+        settings: { notifyEveryStartup: false },
+        pluginOpen: false,
+        logOpen: false,
+      };
+      let jobTimer = null;
 
       function cliTracked(status) {
         const cli = status?.cli;
@@ -786,186 +1211,208 @@
         return Boolean(cli.localVersion);
       }
 
-      function setCliVisible(visible) {
-        $('cli-card').classList.toggle('hidden', !visible);
-        $('btn-cli').classList.toggle('hidden', !visible);
+      function fmtVersion(version, extra) {
+        if (!version && !extra) return null;
+        return extra ? `${version || '?'} (${extra})` : version;
       }
 
-      function setBadgeChecking(el) {
-        el.className = 'badge checking';
-        el.innerHTML = '<span class="mini-spin" aria-hidden="true"></span>checking';
+      function fmtChecked(iso) {
+        if (!iso) return '';
+        const when = new Date(iso);
+        if (Number.isNaN(when.getTime())) return iso;
+        const time = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const sameDay = when.toDateString() === new Date().toDateString();
+        return sameDay ? time : `${when.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
       }
 
-      function setBadge(el, available) {
-        el.className = 'badge ' + (available ? 'warn' : 'ok');
-        el.textContent = available ? 'update available' : 'up to date';
+      function fmtElapsed(ms) {
+        const s = Math.max(0, Math.floor(ms / 1000));
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
       }
 
-      function setPluginBadge(el, plugin) {
-        if (plugin?.updateAvailable) {
-          el.className = 'badge warn';
-          el.textContent = 'update available';
-          return;
+      function setCollapse(el, open) {
+        el.classList.toggle('open', open);
+        el.inert = !open;
+      }
+
+      const CHIP_ICON = { ok: 'i-check', update: 'i-download' };
+      function setChip(el, kind, text) {
+        const key = `${kind}|${text}`;
+        if (el.dataset.key === key) return;
+        const changed = Boolean(el.dataset.key);
+        el.dataset.key = key;
+        el.className = 'chip' + (kind === 'ok' ? '' : ` ${kind}`);
+        el.textContent = '';
+        if (CHIP_ICON[kind]) {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'icon');
+          const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+          use.setAttribute('href', `#${CHIP_ICON[kind]}`);
+          svg.appendChild(use);
+          el.appendChild(svg);
         }
-        if (plugin?.localAhead) {
-          el.className = 'badge checking';
-          el.textContent = 'local ahead of GitHub';
-          return;
+        el.appendChild(document.createTextNode(text));
+        if (changed && !reduceMotion.matches) {
+          el.classList.remove('pop');
+          void el.offsetWidth;
+          el.classList.add('pop');
         }
-        setBadge(el, false);
       }
 
-      function updateActionButtons(status) {
+      function renderItem(root, kind, info, { missingText = 'not installed' } = {}) {
+        const loaded = Boolean(state.status);
+        const busy = state.job === kind;
+        const available = Boolean(info?.updateAvailable);
+        const cardState = !loaded ? 'loading' : busy ? 'busy' : available ? 'update' : 'ok';
+        root.dataset.state = cardState;
+
+        const q = (role) => root.querySelector(`[data-role="${role}"]`);
+        if (loaded) {
+          q('local').textContent = info.local || missingText;
+          q('remote').textContent = info.remote || 'unknown';
+        }
+
+        const chip = q('chip');
+        if (!loaded) setChip(chip, 'muted', 'Checking');
+        else if (busy) setChip(chip, 'busy', 'Updating');
+        else if (available) setChip(chip, 'update', info.local ? 'Update available' : 'Not installed');
+        else if (info.ahead) setChip(chip, 'muted', 'Ahead of GitHub');
+        else setChip(chip, 'ok', 'Up to date');
+
+        setCollapse(q('action'), loaded && available && !busy);
+        setCollapse(q('progress'), busy);
+        const btn = root.querySelector('.card-action .btn');
+        if (btn) btn.disabled = Boolean(state.job) || state.checking;
+      }
+
+      function render() {
+        const { status, checking, job, error, flash } = state;
         const app = status?.app || {};
         const cli = status?.cli || {};
         const plugin = status?.plugin || {};
-        const appBtn = $('btn-app');
-        const cliBtn = $('btn-cli');
-        const pluginBtn = $('btn-plugin');
         const tracked = cliTracked(status);
 
-        setCliVisible(tracked);
-
-        if (!busy) {
-          appBtn.disabled = !app.updateAvailable;
-          pluginBtn.disabled = !plugin.updateAvailable;
-          if (tracked) {
-            const cliInstalled = Boolean(cli.localVersion);
-            const cliLabel = cliInstalled ? 'Update CLI' : 'Install CLI';
-            BUTTON_IDLE['btn-cli'] = cliLabel;
-            cliBtn.querySelector('.btn-label').textContent = cliLabel;
-            cliBtn.disabled = !cli.updateAvailable;
-          }
-        }
-      }
-
-      function renderStatus(status, { checkedAt, cached } = {}) {
-        lastStatus = status;
-        const app = status.app || {};
-        const cli = status.cli || {};
-        const plugin = status.plugin || {};
-        const tracked = cliTracked(status);
-        $('app-local').textContent = app.localBuildId
-          ? `${app.localVersion || '?'} (${app.localBuildId})`
-          : app.localVersion || 'not installed';
-        $('app-remote').textContent = app.remoteBuildId
-          ? `${app.remoteVersion || '?'} (${app.remoteBuildId})`
-          : 'unknown';
-        if (tracked) {
-          $('cli-local').textContent = cli.localVersion || 'not installed';
-          $('cli-remote').textContent = cli.remoteVersion || 'unknown';
-          setBadge($('cli-badge'), !!cli.updateAvailable);
-        }
-        $('plugin-local').textContent = plugin.localCommit
-          ? `${plugin.localVersion || '?'} (${plugin.localCommit})`
-          : plugin.localVersion || 'unknown';
-        $('plugin-remote').textContent = plugin.remoteCommit
-          ? `${plugin.remoteVersion || '?'} (${plugin.remoteCommit})`
-          : plugin.remoteVersion || 'unknown';
-        setBadge($('app-badge'), !!app.updateAvailable);
-        setPluginBadge($('plugin-badge'), plugin);
-        updateActionButtons(status);
-        setCacheMeta(checkedAt, cached);
-
-        if (!busy) {
-          const cliUp = tracked && cli.updateAvailable;
-          if (app.updateAvailable || cliUp || plugin.updateAvailable) {
-            setStatus('warn', 'Updates available');
-          } else if (plugin.localAhead) {
-            setStatus('success', 'Up to date (plugin ahead of GitHub)');
-          } else {
-            setStatus('success', 'Everything is up to date');
-          }
-        }
-      }
-
-      function setBusy(path, isBusy) {
-        busy = isBusy;
-        const activeBtn =
-          path === '/api/status' ? 'btn-check' :
-          path === '/api/update-app' ? 'btn-app' :
-          path === '/api/update-cli' ? 'btn-cli' :
-          path === '/api/update-plugin' ? 'btn-plugin' : null;
-
-        ['btn-check', 'btn-app', 'btn-cli', 'btn-plugin'].forEach((id) => {
-          const btn = $(id);
-          const isActive = isBusy && id === activeBtn;
-          btn.classList.toggle('busy', isActive);
-          // Keep idle labels so the button group width stays stable.
-          if (!isBusy && BUTTON_IDLE[id]) {
-            btn.querySelector('.btn-label').textContent = BUTTON_IDLE[id];
-          }
-        });
-
-        $('btn-check').disabled = isBusy;
-        if (isBusy) {
-          $('btn-app').disabled = true;
-          $('btn-cli').disabled = true;
-          $('btn-plugin').disabled = true;
+        // Hero: plugin updates are intentionally not counted here.
+        const pending = (app.updateAvailable ? 1 : 0) + (tracked && cli.updateAvailable ? 1 : 0);
+        let heroState, text;
+        if (job || checking) {
+          heroState = 'busy';
+          text = job ? JOBS[job].running : 'Checking for updates…';
+        } else if (error) {
+          heroState = 'error';
+          text = {
+            job: 'Update failed · see log',
+            settings: "Couldn't save settings",
+          }[error.kind] || "Couldn't check for updates";
+        } else if (!status) {
+          heroState = 'idle';
+          text = 'Ready';
+        } else if (pending) {
+          heroState = 'update';
+          text = pending > 1 ? `${pending} updates available` : 'Update available';
         } else {
-          updateActionButtons(lastStatus);
+          heroState = 'ok';
+          text = flash && flash.kind !== 'plugin' ? flash.text : 'Everything is up to date';
         }
+        $('hero').dataset.state = heroState;
+        setLogo(heroState);
+        const heroStatus = $('hero-status');
+        heroStatus.textContent = '';
+        const strong = document.createElement('strong');
+        strong.textContent = text;
+        heroStatus.appendChild(strong);
+        if (state.checkedAt && heroState !== 'busy') {
+          heroStatus.appendChild(document.createTextNode(' · '));
+          const meta = document.createElement('span');
+          meta.className = 'meta';
+          meta.textContent = `checked ${fmtChecked(state.checkedAt)}`;
+          heroStatus.appendChild(meta);
+        }
+        $('btn-check').disabled = Boolean(job) || checking;
 
-        const checking = isBusy && path === '/api/status';
-        const cards = ['app-card', 'plugin-card'];
-        if (cliTracked(lastStatus) || !lastStatus) cards.push('cli-card');
-        ['app-card', 'cli-card', 'plugin-card'].forEach((id) => {
-          $(id).classList.toggle('loading', checking && cards.includes(id));
+        // Cards
+        renderItem($('app-card'), 'app', {
+          local: fmtVersion(app.localVersion, app.localBuildId),
+          remote: fmtVersion(app.remoteVersion, app.remoteBuildId),
+          updateAvailable: app.updateAvailable,
         });
+        $('cli-card').hidden = Boolean(status) && !tracked;
+        renderItem($('cli-card'), 'cli', {
+          local: cli.localVersion,
+          remote: cli.remoteVersion,
+          updateAvailable: tracked && cli.updateAvailable,
+        });
+        $('cli-card').querySelector('[data-role="cli-label"]').textContent =
+          cli.localVersion ? 'Update' : 'Install';
 
-        if (checking) {
-          setBadgeChecking($('app-badge'));
-          setBadgeChecking($('plugin-badge'));
-          if (cliTracked(lastStatus) || !lastStatus) {
-            setBadgeChecking($('cli-badge'));
-          }
+        // Footer + plugin panel
+        const footer = plugin.localVersion
+          ? `Linux Updater v${plugin.localVersion}${plugin.localCommit ? ` · ${plugin.localCommit}` : ''}`
+          : 'Linux Updater';
+        $('footer-text').textContent = footer;
+        $('plugin-badge').classList.toggle('on', Boolean(plugin.updateAvailable) && job !== 'plugin');
+        renderItem($('plugin-panel'), 'plugin', {
+          local: fmtVersion(plugin.localVersion, plugin.localCommit),
+          remote: fmtVersion(plugin.remoteVersion, plugin.remoteCommit),
+          updateAvailable: plugin.updateAvailable,
+          ahead: plugin.localAhead,
+        }, { missingText: 'unknown' });
+        const note = $('plugin-note');
+        const pluginFlash = flash?.kind === 'plugin';
+        note.className = 'panel-note' + (pluginFlash ? ' ok' : '');
+        note.textContent = pluginFlash
+          ? flash.text
+          : plugin.repo
+            ? `github.com/${plugin.repo}${plugin.branch ? ` @ ${plugin.branch}` : ''}`
+            : '';
+        setCollapse($('plugin-collapse'), state.pluginOpen);
+        $('btn-plugin-panel').setAttribute('aria-expanded', String(state.pluginOpen));
+
+        // Log
+        setCollapse($('log-collapse'), state.logOpen);
+        $('btn-log').setAttribute('aria-expanded', String(state.logOpen));
+        $('error').hidden = !error;
+        $('error-text').textContent = error?.message || '';
+      }
+
+      function tickElapsed() {
+        if (!state.job) return;
+        const card = { app: 'app-card', cli: 'cli-card', plugin: 'plugin-panel' }[state.job];
+        $(card).querySelector('[data-role="elapsed"]').textContent =
+          `Updating… ${fmtElapsed(Date.now() - state.jobStart)}`;
+      }
+
+      function setLog(text) {
+        $('log').textContent = text;
+      }
+
+      function applySettings(next) {
+        state.settings = { notifyEveryStartup: Boolean(next?.notifyEveryStartup) };
+        const toggle = $('notify-every');
+        if (toggle.checked !== state.settings.notifyEveryStartup) {
+          toggle.checked = state.settings.notifyEveryStartup;
         }
+        $('notify-hint').textContent = state.settings.notifyEveryStartup
+          ? 'On: always notify with the current status at startup.'
+          : 'Off: notify only when updates are available.';
       }
 
-      function showError(message) {
-        $('error').hidden = false;
-        $('error-text').textContent = message;
-        $('log-details').open = true;
-      }
+      // ---------- API ----------
 
-      function clearError() {
-        $('error').hidden = true;
-        $('error-text').textContent = '';
-      }
-
-      async function apiCall(path, { body = {}, method } = {}) {
-        const resolvedMethod = method || 'POST';
-        const opts = { method: resolvedMethod };
-        if (resolvedMethod !== 'GET') {
-          opts.body = JSON.stringify(body);
-        }
+      async function apiCall(path, { body = {}, method = 'POST' } = {}) {
+        const opts = { method };
+        if (method !== 'GET') opts.body = JSON.stringify(body);
         if (window.sidecar && typeof window.sidecar.fetch === 'function') {
           const res = await window.sidecar.fetch(path, opts);
           return res.json();
         }
-        const res = await fetch(path, {
-          ...opts,
-          headers: { 'content-type': 'application/json' },
-        });
+        const res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json' } });
         return res.json();
       }
 
-      async function loadCached() {
-        try {
-          const data = await apiCall('/api/status', { method: 'GET' });
-          if (data.settings) applySettings(data.settings);
-          if (data.ok && data.status) {
-            renderStatus(data.status, {
-              checkedAt: data.checkedAt,
-              cached: !!data.cached,
-            });
-            if (data.log) $('log').textContent = data.log;
-            return true;
-          }
-        } catch {
-          /* ignore — fresh check will follow */
-        }
-        return false;
+      function failed(kind, message) {
+        state.error = { kind, message };
+        state.logOpen = true;
       }
 
       async function loadSettings() {
@@ -973,138 +1420,234 @@
           const data = await apiCall('/api/settings', { method: 'GET' });
           if (data.ok && data.settings) applySettings(data.settings);
         } catch {
-          applySettings(settings);
+          applySettings(state.settings);
         }
       }
 
-      async function callApi(path, { silent = false } = {}) {
-        clearError();
-        if (!silent) {
-          setBusy(path, true);
-          setStatus('active', ACTION_LABELS[path] || 'Working…');
-          if (path !== '/api/status' || !lastStatus) {
-            $('log').textContent = ACTION_LABELS[path] || `Running ${path}…`;
-          }
-        } else {
-          setStatus('active', 'Refreshing…');
-          $('btn-check').disabled = true;
-        }
-
+      async function loadCached() {
         try {
-          const data = await apiCall(path, {
-            method: 'POST',
-            body: path === '/api/status' ? { fresh: true } : {},
-          });
-
-          if (data.log) {
-            $('log').textContent = data.log;
-          } else if (data.status) {
-            $('log').textContent = JSON.stringify(data.status, null, 2);
-          } else {
-            $('log').textContent = JSON.stringify(data, null, 2);
-          }
-
-          if (!data.ok) {
-            showError(data.error || `Command failed (code ${data.code ?? '?'})`);
-            setStatus('err', data.error || 'Something went wrong');
-            if (data.status) {
-              renderStatus(data.status, {
-                checkedAt: data.checkedAt,
-                cached: !!data.stale,
-              });
-            } else if (lastStatus) {
-              updateActionButtons(lastStatus);
-            }
-          } else if (path === '/api/status') {
-            const appUp = data.status?.app?.updateAvailable;
-            const cliUp = data.status?.cli?.tracked && data.status?.cli?.updateAvailable;
-            const pluginUp = data.status?.plugin?.updateAvailable;
-            if (appUp || cliUp || pluginUp) {
-              setStatus('warn', 'Updates available');
-            } else if (data.status?.plugin?.localAhead) {
-              setStatus('success', 'Up to date (plugin ahead of GitHub)');
-            } else {
-              setStatus('success', 'Everything is up to date');
-            }
-          } else if (path === '/api/update-app') {
-            setStatus('success', 'App update finished — relaunch Antigravity');
-          } else if (path === '/api/update-cli') {
-            setStatus('success', 'CLI update finished');
-          } else if (path === '/api/update-plugin') {
-            setStatus('success', 'Plugin updated — restart Antigravity');
-          }
-
+          const data = await apiCall('/api/status', { method: 'GET' });
           if (data.settings) applySettings(data.settings);
+          if (data.ok && data.status) {
+            state.status = data.status;
+            state.checkedAt = data.checkedAt || null;
+            if (data.log) setLog(data.log);
+          }
+        } catch {
+          /* fresh check follows */
+        }
+        render();
+      }
 
+      async function check() {
+        if (state.checking || state.job) return;
+        state.checking = true;
+        state.error = null;
+        render();
+        try {
+          const data = await apiCall('/api/status', { body: { fresh: true } });
+          if (data.settings) applySettings(data.settings);
+          if (data.log) setLog(data.log);
+          else if (data.status) setLog(JSON.stringify(data.status, null, 2));
           if (data.status) {
-            renderStatus(data.status, {
-              checkedAt: data.checkedAt,
-              cached: !!data.cached,
-            });
-          } else if (path !== '/api/status') {
-            await callApi('/api/status', { silent: true });
-            return;
+            state.status = data.status;
+            if (data.ok) state.checkedAt = data.checkedAt || new Date().toISOString();
           }
-          return data;
+          if (!data.ok) failed('check', data.error || `Check failed (code ${data.code ?? '?'})`);
         } catch (err) {
-          showError(String(err));
-          $('log').textContent = String(err);
-          setStatus('err', String(err));
-          if (lastStatus) updateActionButtons(lastStatus);
+          failed('check', String(err));
+          setLog(String(err));
         } finally {
-          if (!silent) setBusy(path, false);
-          else {
-            $('btn-check').disabled = false;
-            updateActionButtons(lastStatus);
-          }
+          state.checking = false;
+          render();
         }
       }
 
-      $('btn-check').addEventListener('click', () => callApi('/api/status'));
-      $('btn-retry').addEventListener('click', () => callApi('/api/status'));
-      $('btn-app').addEventListener('click', async () => {
-        if (!confirm('Update the desktop App? Antigravity will quit and pkexec will prompt for authorization.')) {
-          return;
+      async function runJob(kind) {
+        if (state.job || state.checking) return;
+        state.job = kind;
+        state.jobStart = Date.now();
+        state.error = null;
+        state.flash = null;
+        setLog(`${JOBS[kind].running}`);
+        render();
+        tickElapsed();
+        jobTimer = setInterval(tickElapsed, 1000);
+        let ok = false;
+        try {
+          const data = await apiCall(JOBS[kind].path);
+          setLog(data.log || JSON.stringify(data, null, 2));
+          ok = Boolean(data.ok);
+          if (!ok) failed('job', data.error || `${JOBS[kind].running.replace('…', '')} failed (code ${data.code ?? '?'})`);
+        } catch (err) {
+          failed('job', String(err));
+          setLog(String(err));
+        } finally {
+          clearInterval(jobTimer);
+          jobTimer = null;
+          state.job = null;
+          render();
         }
-        await callApi('/api/update-app');
-      });
-      $('btn-cli').addEventListener('click', async () => {
-        const installing = !lastStatus?.cli?.localVersion;
-        const msg = installing
-          ? 'Install the agy CLI via the official install script?'
-          : 'Update the agy CLI via the official install script?';
-        if (!confirm(msg)) return;
-        await callApi('/api/update-cli');
-      });
-      $('btn-plugin').addEventListener('click', async () => {
-        const localV = lastStatus?.plugin?.localVersion || '?';
-        const remoteV = lastStatus?.plugin?.remoteVersion || '?';
-        const repo = lastStatus?.plugin?.repo || 'xxxizum1kxxx/agy-linux-live-update';
-        if (!confirm(`Update plugin ${localV} → ${remoteV} from GitHub (${repo})?\nRestart Antigravity afterward to reload the Sidecar.`)) {
-          return;
+        if (ok) {
+          await check();
+          state.flash = { kind, text: JOBS[kind].done };
+          render();
         }
-        await callApi('/api/update-plugin');
+      }
+
+      // ---------- dialog ----------
+
+      const dlg = $('dlg');
+      let dlgResolve = null;
+
+      function closeDialog(result) {
+        if (!dlg.open || dlg.classList.contains('closing')) return;
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          dlg.classList.remove('closing');
+          dlg.close();
+          const resolve = dlgResolve;
+          dlgResolve = null;
+          resolve?.(result);
+        };
+        if (reduceMotion.matches) return finish();
+        dlg.classList.add('closing');
+        dlg.querySelector('.dlg-surface').addEventListener('animationend', finish, { once: true });
+        setTimeout(finish, 320); // fallback if animationend never fires
+      }
+
+      function confirmDialog({ origin, title, body, from, to, note, confirm }) {
+        $('dlg-title').textContent = title;
+        $('dlg-body').textContent = body;
+        $('dlg-from').textContent = from || '?';
+        $('dlg-to').textContent = to || '?';
+        $('dlg-versions').hidden = !from && !to;
+        $('dlg-note-text').textContent = note || '';
+        $('dlg-note').hidden = !note;
+        $('dlg-ok').textContent = confirm;
+
+        // Grow out of the button that opened the dialog.
+        if (origin) {
+          const r = origin.getBoundingClientRect();
+          dlg.style.setProperty('--fx', `${r.left + r.width / 2 - innerWidth / 2}px`);
+          dlg.style.setProperty('--fy', `${r.top + r.height / 2 - innerHeight / 2}px`);
+        }
+        return new Promise((resolve) => {
+          dlgResolve = resolve;
+          dlg.showModal();
+          $('dlg-ok').focus();
+        });
+      }
+
+      $('dlg-ok').addEventListener('click', () => closeDialog(true));
+      $('dlg-cancel').addEventListener('click', () => closeDialog(false));
+      dlg.addEventListener('cancel', (e) => {
+        e.preventDefault();
+        closeDialog(false);
       });
+      dlg.addEventListener('click', (e) => {
+        if (e.target !== dlg) return;
+        const r = dlg.querySelector('.dlg-surface').getBoundingClientRect();
+        const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (!inside) closeDialog(false);
+      });
+
+      // ---------- events ----------
+
+      $('btn-check').addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        btn.classList.remove('spun');
+        void btn.offsetWidth;
+        btn.classList.add('spun');
+        state.flash = null;
+        check();
+      });
+      $('btn-retry').addEventListener('click', () => check());
+
+      $('btn-app').addEventListener('click', async (e) => {
+        const app = state.status?.app || {};
+        const ok = await confirmDialog({
+          origin: e.currentTarget,
+          title: 'Update Desktop App?',
+          body: 'Downloads the official tarball and installs it to /opt/antigravity.',
+          from: fmtVersion(app.localVersion, app.localBuildId),
+          to: fmtVersion(app.remoteVersion, app.remoteBuildId),
+          note: 'Antigravity will quit, and pkexec will ask for your password. Relaunch the app afterward.',
+          confirm: 'Update',
+        });
+        if (ok) runJob('app');
+      });
+
+      $('btn-cli').addEventListener('click', async (e) => {
+        const cli = state.status?.cli || {};
+        const installing = !cli.localVersion;
+        const ok = await confirmDialog({
+          origin: e.currentTarget,
+          title: installing ? 'Install agy CLI?' : 'Update agy CLI?',
+          body: 'Runs the official install script from Google.',
+          from: cli.localVersion || 'not installed',
+          to: cli.remoteVersion,
+          confirm: installing ? 'Install' : 'Update',
+        });
+        if (ok) runJob('cli');
+      });
+
+      $('btn-plugin').addEventListener('click', async (e) => {
+        const plugin = state.status?.plugin || {};
+        const repo = plugin.repo || 'xxxizum1kxxx/agy-linux-live-update';
+        const ok = await confirmDialog({
+          origin: e.currentTarget,
+          title: 'Update plugin?',
+          body: `Pulls the latest Linux Updater from github.com/${repo}.`,
+          from: fmtVersion(plugin.localVersion, plugin.localCommit),
+          to: fmtVersion(plugin.remoteVersion, plugin.remoteCommit),
+          note: 'Restart Antigravity afterward to reload this panel.',
+          confirm: 'Update',
+        });
+        if (ok) runJob('plugin');
+      });
+
+      $('btn-plugin-panel').addEventListener('click', () => {
+        state.pluginOpen = !state.pluginOpen;
+        render();
+        if (state.pluginOpen) {
+          // Keep the footer in view once the panel has grown.
+          setTimeout(() => {
+            document.querySelector('.footer').scrollIntoView({
+              block: 'end',
+              behavior: reduceMotion.matches ? 'auto' : 'smooth',
+            });
+          }, 200);
+        }
+      });
+
+      $('btn-log').addEventListener('click', () => {
+        state.logOpen = !state.logOpen;
+        render();
+      });
+
       $('notify-every').addEventListener('change', async (e) => {
         const next = { notifyEveryStartup: e.target.checked };
         applySettings(next);
         try {
-          const data = await apiCall('/api/settings', {
-            method: 'POST',
-            body: next,
-          });
+          const data = await apiCall('/api/settings', { body: next });
           if (data.ok && data.settings) applySettings(data.settings);
         } catch (err) {
-          showError(`Failed to save settings: ${err}`);
-          e.target.checked = !next.notifyEveryStartup;
-          applySettings({ notifyEveryStartup: e.target.checked });
+          applySettings({ notifyEveryStartup: !next.notifyEveryStartup });
+          failed('settings', `Failed to save settings: ${err}`);
+          render();
         }
       });
 
+      // ---------- boot ----------
+
+      render();
       (async () => {
         await loadSettings();
-        const hadCache = await loadCached();
-        await callApi('/api/status', { silent: hadCache });
+        await loadCached();
+        await check();
       })();
     </script>
   </body>

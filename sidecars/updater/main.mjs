@@ -80,32 +80,23 @@ function writeSettings(settings) {
   return next;
 }
 
+// Plugin self-updates are intentionally excluded: they only surface as a
+// badge in the panel footer, never in desktop notifications.
 function hasUpdates(status) {
   const app = status?.app || {};
   const cli = status?.cli || {};
-  const plugin = status?.plugin || {};
-  return Boolean(
-    app.updateAvailable ||
-      (cli.tracked && cli.updateAvailable) ||
-      plugin.updateAvailable
-  );
+  return Boolean(app.updateAvailable || (cli.tracked && cli.updateAvailable));
 }
 
 function updateFingerprint(status) {
   const app = status?.app || {};
   const cli = status?.cli || {};
-  const plugin = status?.plugin || {};
   const parts = [];
   if (app.updateAvailable) {
     parts.push(`app:${app.remoteBuildId || app.remoteVersion || '1'}`);
   }
   if (cli.tracked && cli.updateAvailable) {
     parts.push(`cli:${cli.remoteVersion || '1'}`);
-  }
-  if (plugin.updateAvailable) {
-    parts.push(
-      `plugin:${plugin.remoteVersion || '1'}:${plugin.remoteCommit || ''}`
-    );
   }
   return parts.join('|') || '';
 }
@@ -130,17 +121,12 @@ function notifyBody(status, { upToDate = false } = {}) {
   const app = status?.app || {};
   const cli = status?.cli || {};
 
-  const plugin = status?.plugin || {};
-
   if (upToDate) {
     lines.push(
       `App: ${app.localVersion || '?'} (${app.localBuildId || 'ok'})`
     );
     if (cli.tracked) {
       lines.push(`CLI (agy): ${cli.localVersion || '?'}`);
-    }
-    if (plugin.localVersion) {
-      lines.push(`Plugin: ${plugin.localVersion}`);
     }
     return lines.join('\n');
   }
@@ -153,11 +139,6 @@ function notifyBody(status, { upToDate = false } = {}) {
   if (cli.tracked && cli.updateAvailable) {
     lines.push(
       `CLI (agy): ${cli.localVersion || 'not installed'} → ${cli.remoteVersion || '?'}`
-    );
-  }
-  if (plugin.updateAvailable) {
-    lines.push(
-      `Plugin: ${plugin.localVersion || '?'} → ${plugin.remoteVersion || '?'}`
     );
   }
   lines.push('Open Antigravity → Extensions → Linux Updater.');

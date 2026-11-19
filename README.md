@@ -90,6 +90,17 @@ Slash skills: `/check-updates`, `/update-app`, `/update-cli`.
 
 **中文：** 安装并启用 Sidecar 后重启 Antigravity，从 Extensions → Linux Updater 打开面板。斜杠技能同上。
 
+### Panel layout
+
+The panel uses Material 3 Expressive styling (spring motion, shape morphing) on top of the host theme colors:
+
+- **Header** – a shape-morphing logo plus the overall status (`Everything is up to date · checked 14:32`). The refresh icon button at the top right runs a fresh check.
+- **Desktop App / CLI cards** – each card shows installed vs. latest. When an update is available the card is tinted and an **Update** button appears in it. Every update asks for confirmation in a dialog first, then shows a wavy progress bar and elapsed time while it runs. The CLI card is hidden when `agy` is not installed.
+- **Notify on every startup** switch and a collapsible **Activity log**. The log opens automatically when something fails.
+- **Footer** – the plugin version (`Linux Updater v1.4.0 · <commit>`). A dot badge on the puzzle icon means a newer plugin is on GitHub. Click the icon to open the plugin panel and update from there.
+
+**中文：** 面板采用 Material 3 Expressive 风格（弹簧动效、形状变换），配色跟随宿主主题。顶部显示形状 logo 和总体状态，右上角刷新按钮用于重新检查。App / CLI 卡片有更新时会变色，并在卡片内出现 Update 按钮；更新前弹出对话框确认，执行时显示波浪进度条和已用时间。下方是通知开关和可展开的日志（出错时自动展开）。插件版本在页脚，有新版本时拼图图标上出现小红点，点击展开插件面板进行更新。
+
 ### Background check & desktop notifications
 
 When the Sidecar process starts, it runs a quiet `status-json` check and may call:
@@ -104,14 +115,15 @@ Notes:
 - Needs a running notification daemon (GNOME/KDE/XFCE usually provide one). If `notify-send` is missing or fails, checks still work; only the toast is skipped.
 - Desktop notifications use app name **Antigravity Linux Updater** and the Antigravity PNG icon when available.
 - Panel toggle **Notify on every startup**:
-  - **Off** (default): notify only when updates are available (same fingerprint is not notified twice).
+  - **Off** (default): notify only when App/CLI updates are available (same fingerprint is not notified twice).
   - **On**: always notify at startup with either “Updates available” or “Up to date”.
-- Manual **Check** in the panel never sends a desktop notification.
+- Plugin self-updates never trigger desktop notifications. They only show as the footer badge in the panel.
+- The refresh button in the panel never sends a desktop notification.
 - If the `agy` CLI is not installed, CLI status/update is skipped (App-only). Pass `--cli` to `update-core.sh` / `update-antigravity` to force a CLI probe (e.g. to install).
-- The panel can also check/update **this plugin** from GitHub (`xxxizum1kxxx/agy-linux-live-update` on `main`) via **Update Plugin** / `update-core.sh update-plugin`.
+- The panel can also check/update **this plugin** from GitHub (`xxxizum1kxxx/agy-linux-live-update` on `main`) from the footer plugin panel, or with `update-core.sh update-plugin`.
 - Opening the panel shows the **cached** result first, then refreshes in the background.
 
-**中文：** Sidecar 启动时自动检查；`notify-send` 应用名为 Antigravity Linux Updater，图标用 Antigravity PNG。面板可检查/更新本插件（GitHub `main`）。未安装 `agy` CLI 时不检查 CLI。打开面板先显示缓存再后台刷新。
+**中文：** Sidecar 启动时自动检查；`notify-send` 应用名为 Antigravity Linux Updater，图标用 Antigravity PNG。桌面通知只针对 App / CLI；插件更新不发通知，只在面板页脚显示小红点。未安装 `agy` CLI 时不检查 CLI。打开面板先显示缓存再后台刷新。
 
 ## CLI updates
 
