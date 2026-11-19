@@ -95,11 +95,34 @@
       html {
         background: var(--md-bg);
         color: var(--md-fg);
+        /* Always reserve the (thin) gutter so content never shifts when it appears. */
+        scrollbar-gutter: stable;
       }
+
+      /*
+       * Thin rounded scrollbar: 10px gutter, 6px visible thumb (transparent
+       * border + padding-box clip), 8px on hover. Only ::-webkit-scrollbar is
+       * used because Chromium ignores it once scrollbar-width/color are set.
+       */
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-corner { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: var(--r-full);
+        background-color: var(--md-outline-variant);
+        background-clip: padding-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        border-width: 1px;
+        background-color: var(--md-outline);
+      }
+      ::-webkit-scrollbar-button { display: none; }
 
       /* preload.js sets body margin/padding/background inline from host tokens. */
       body {
-        margin: 0;
+        margin: 0 !important;
+        padding: 0 !important;
         font: 14px/1.45 var(--font);
         background: var(--md-bg) !important;
         color: var(--md-fg) !important;
@@ -114,7 +137,8 @@
         flex-direction: column;
         gap: 12px;
         min-height: 100vh;
-        padding: 20px 16px 12px;
+        /* Right 6px + 10px scrollbar gutter = 16px, matching the left edge. */
+        padding: 20px 6px 12px 16px;
       }
 
       /* ---------- entrance ---------- */
@@ -191,7 +215,10 @@
         outline-offset: 2px;
       }
 
-      /* Pressed buttons morph from full round to a squircle (M3E shape morph). */
+      /*
+       * Pressed buttons ease from full round to ~30% corners (M3E shape morph).
+       * Uses the non-overshooting effect spring so the shape never wobbles.
+       */
       .btn {
         display: inline-flex;
         align-items: center;
@@ -205,7 +232,7 @@
         letter-spacing: 0.01em;
         white-space: nowrap;
         transition:
-          border-radius var(--dur-fast) var(--spring-fast),
+          border-radius var(--dur-effect) var(--spring-effect),
           background-color var(--dur-effect) var(--spring-effect),
           color var(--dur-effect) var(--spring-effect),
           opacity var(--dur-effect) var(--spring-effect);
@@ -232,17 +259,17 @@
         color: var(--md-muted);
         flex: 0 0 auto;
         transition:
-          border-radius var(--dur-fast) var(--spring-fast),
+          transform var(--dur-effect) var(--spring-effect),
           background-color var(--dur-effect) var(--spring-effect),
           color var(--dur-effect) var(--spring-effect),
           opacity var(--dur-effect) var(--spring-effect);
       }
 
-      .icon-btn:active:not(:disabled) { border-radius: var(--r-md); }
+      /* Round icon buttons keep their shape and just press in slightly. */
+      .icon-btn:active:not(:disabled) { transform: scale(0.92); }
       .icon-btn:disabled { cursor: default; opacity: 0.38; }
       .icon-btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
       .icon-btn.sm { width: 32px; height: 32px; }
-      .icon-btn.sm:active:not(:disabled) { border-radius: var(--r-sm); }
       .icon-btn[aria-expanded="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 
       @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -503,17 +530,6 @@
         opacity: 0.8;
         min-width: 0;
       }
-
-      .card-action .btn {
-        transform: scale(0.8);
-        transition:
-          transform var(--dur-default) var(--spring-fast),
-          border-radius var(--dur-fast) var(--spring-fast),
-          background-color var(--dur-effect) var(--spring-effect),
-          opacity var(--dur-effect) var(--spring-effect);
-      }
-
-      .card-action.open .btn { transform: none; }
 
       /* ---------- wavy indeterminate progress ---------- */
 
@@ -945,7 +961,7 @@
           <div class="collapse card-action" data-role="action" inert>
             <div class="collapse-inner">
               <div class="card-action-row">
-                <span class="hint">Runs the official install script</span>
+                <span class="hint" data-role="cli-hint">Runs agy update</span>
                 <button type="button" class="btn tertiary state-layer" id="btn-cli">
                   <svg class="icon sm"><use href="#i-download" /></svg><span data-role="cli-label">Update</span>
                 </button>
@@ -1185,9 +1201,9 @@
       // ---------- state ----------
 
       const JOBS = {
-        app: { path: '/api/update-app', running: 'Updating Desktop App…', done: 'App updated · relaunch Antigravity' },
-        cli: { path: '/api/update-cli', running: 'Updating CLI…', done: 'CLI updated' },
-        plugin: { path: '/api/update-plugin', running: 'Updating plugin…', done: 'Plugin updated · restart Antigravity to reload this panel' },
+        app: { name: 'App', path: '/api/update-app', running: 'Updating Desktop App…', done: 'App updated · relaunch Antigravity' },
+        cli: { name: 'CLI', path: '/api/update-cli', running: 'Updating CLI…', done: 'CLI updated' },
+        plugin: { name: 'Plugin', path: '/api/update-plugin', running: 'Updating plugin…', done: 'Plugin updated · restart Antigravity to reload this panel' },
       };
 
       const state = {
@@ -1344,6 +1360,8 @@
         });
         $('cli-card').querySelector('[data-role="cli-label"]').textContent =
           cli.localVersion ? 'Update' : 'Install';
+        $('cli-card').querySelector('[data-role="cli-hint"]').textContent =
+          cli.localVersion ? 'Runs agy update' : 'Runs the official install script';
 
         // Footer + plugin panel
         const footer = plugin.localVersion
@@ -1425,6 +1443,7 @@
       }
 
       async function loadCached() {
+        let showedJobLog = false;
         try {
           const data = await apiCall('/api/status', { method: 'GET' });
           if (data.settings) applySettings(data.settings);
@@ -1433,13 +1452,21 @@
             state.checkedAt = data.checkedAt || null;
             if (data.log) setLog(data.log);
           }
+          // Prefer the last update's output so failures stay inspectable.
+          const job = data.lastJob;
+          if (job?.log) {
+            const when = fmtChecked(job.at);
+            setLog(`[last ${job.kind} update · ${job.ok ? 'ok' : `failed (code ${job.code})`}${when ? ` · ${when}` : ''}]\n${job.log}`);
+            showedJobLog = true;
+          }
         } catch {
           /* fresh check follows */
         }
         render();
+        return showedJobLog;
       }
 
-      async function check() {
+      async function check({ keepLog = false } = {}) {
         if (state.checking || state.job) return;
         state.checking = true;
         state.error = null;
@@ -1447,7 +1474,9 @@
         try {
           const data = await apiCall('/api/status', { body: { fresh: true } });
           if (data.settings) applySettings(data.settings);
-          if (data.log) setLog(data.log);
+          if (keepLog) {
+            /* keep the update output that is already shown */
+          } else if (data.log) setLog(data.log);
           else if (data.status) setLog(JSON.stringify(data.status, null, 2));
           if (data.status) {
             state.status = data.status;
@@ -1489,8 +1518,13 @@
           render();
         }
         if (ok) {
-          await check();
-          state.flash = { kind, text: JOBS[kind].done };
+          await check({ keepLog: true });
+          // Guard against scripts that exit 0 without actually updating.
+          if (!state.error && state.status?.[kind]?.updateAvailable) {
+            failed('job', `${JOBS[kind].name} update finished, but the version did not change`);
+          } else if (!state.error) {
+            state.flash = { kind, text: JOBS[kind].done };
+          }
           render();
         }
       }
@@ -1586,7 +1620,9 @@
         const ok = await confirmDialog({
           origin: e.currentTarget,
           title: installing ? 'Install agy CLI?' : 'Update agy CLI?',
-          body: 'Runs the official install script from Google.',
+          body: installing
+            ? 'Runs the official install script from Google.'
+            : 'Runs agy update, the CLI\u2019s built-in updater.',
           from: cli.localVersion || 'not installed',
           to: cli.remoteVersion,
           confirm: installing ? 'Install' : 'Update',
@@ -1646,8 +1682,8 @@
       render();
       (async () => {
         await loadSettings();
-        await loadCached();
-        await check();
+        const showedJobLog = await loadCached();
+        await check({ keepLog: showedJobLog });
       })();
     </script>
   </body>

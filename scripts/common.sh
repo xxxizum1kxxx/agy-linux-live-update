@@ -228,7 +228,13 @@ install_app_from_tarball() {
 }
 
 install_official_cli() {
-  curl -fsSL "$CLI_INSTALL_URL" | bash
+  if command -v agy >/dev/null 2>&1; then
+    # The official install.sh exits 0 without doing anything when agy already
+    # exists ("already installed"), so use the CLI's built-in updater instead.
+    agy update </dev/null
+  else
+    curl -fsSL "$CLI_INSTALL_URL" | bash
+  fi
 }
 
 install_this_plugin() {

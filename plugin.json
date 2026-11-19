@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "agy-linux-live-update",
   "displayName": "Linux Updater",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Check and update the Linux Antigravity desktop App (/opt), agy CLI, and this plugin (from GitHub). Includes root install.sh for FHS installs.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

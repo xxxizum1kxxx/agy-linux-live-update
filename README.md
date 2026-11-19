@@ -137,7 +137,9 @@ update-antigravity --cli --yes
 
 Core script: `scripts/update-core.sh` (download + `pkexec scripts/install-root.sh`).
 
-**中文：** 终端可用 `update-antigravity`；底层是 `scripts/update-core.sh`。
+CLI updates use `agy update` when `agy` is already installed, because the official `install.sh` does nothing if the binary exists. The official `install.sh` is only used for a fresh install. After updating, the script checks `agy --version` and exits non-zero if the version did not change.
+
+**中文：** 终端可用 `update-antigravity`；底层是 `scripts/update-core.sh`。已安装 `agy` 时用 `agy update` 更新（官方 install.sh 检测到已存在会直接退出）；未安装时才用官方 install.sh。更新后会核对版本，版本没变则以非 0 退出。
 
 ## Uninstall
 

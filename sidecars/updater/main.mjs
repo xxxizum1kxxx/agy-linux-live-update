@@ -309,6 +309,7 @@ async function refreshAndMaybeNotify({ notify = false } = {}) {
     status: result.status,
     log: result.log,
     notifiedFingerprint: nextNotified,
+    lastJob: previous?.lastJob || null,
   };
   writeCache(payload);
   return {
@@ -329,6 +330,7 @@ function cachedStatusResponse() {
     checkedAt: cache.checkedAt || null,
     stale: true,
     lastError: cache.lastError || null,
+    lastJob: cache.lastJob || null,
     settings: readSettings(),
   };
 }
@@ -374,32 +376,36 @@ app.api('/api/settings', async (data = {}) => {
   return { ok: true, settings: next };
 }, 'POST');
 
-app.api('/api/update-app', async () => {
-  const result = await runCore(['update-app', '--yes'], { timeoutMs: 900_000 });
-  return {
+// Run an update job and remember its output so the panel log survives reloads.
+async function runUpdateJob(kind, args, timeoutMs) {
+  const result = await runCore(args, { timeoutMs });
+  const response = {
     ok: result.code === 0,
     code: result.code,
     log: (result.stdout + '\n' + result.stderr).trim(),
   };
-});
+  try {
+    writeCache({
+      ...(readCache() || {}),
+      lastJob: { kind, ...response, at: new Date().toISOString() },
+    });
+  } catch (err) {
+    console.warn('[linux-updater] failed to persist job log:', err);
+  }
+  return response;
+}
 
-app.api('/api/update-cli', async () => {
-  const result = await runCore(['update-cli', '--yes'], { timeoutMs: 300_000 });
-  return {
-    ok: result.code === 0,
-    code: result.code,
-    log: (result.stdout + '\n' + result.stderr).trim(),
-  };
-});
+app.api('/api/update-app', async () =>
+  runUpdateJob('app', ['update-app', '--yes'], 900_000)
+);
 
-app.api('/api/update-plugin', async () => {
-  const result = await runCore(['update-plugin', '--yes'], { timeoutMs: 300_000 });
-  return {
-    ok: result.code === 0,
-    code: result.code,
-    log: (result.stdout + '\n' + result.stderr).trim(),
-  };
-});
+app.api('/api/update-cli', async () =>
+  runUpdateJob('cli', ['update-cli', '--yes'], 300_000)
+);
+
+app.api('/api/update-plugin', async () =>
+  runUpdateJob('plugin', ['update-plugin', '--yes'], 300_000)
+);
 
 await app.run();
 

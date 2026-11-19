@@ -198,8 +198,15 @@ do_update_cli() {
     echo "Skipped CLI update."
     return 0
   fi
+  local before=${CLI_LOCAL:-}
   install_official_cli
-  echo "CLI now: $(installed_cli_version)"
+  local after
+  after=$(installed_cli_version || true)
+  echo "CLI now: ${after:-not installed}"
+  if [ -z "$after" ] || { [ -n "$before" ] && ! version_gt "$after" "$before"; }; then
+    echo "CLI version did not change (${before:-none} → ${after:-none}); expected $CLI_REMOTE" >&2
+    return 1
+  fi
 }
 
 do_update_plugin() {
