@@ -95,6 +95,11 @@
       html {
         background: var(--md-bg);
         color: var(--md-fg);
+        /*
+         * Below 360px (350 + 10px scrollbar gutter) scroll horizontally
+         * instead of re-wrapping the layout.
+         */
+        min-width: 350px;
         /* Always reserve the (thin) gutter so content never shifts when it appears. */
         scrollbar-gutter: stable;
       }
@@ -341,19 +346,23 @@
         line-height: 1.25;
       }
 
-      .hero-status {
-        margin: 2px 0 0;
+      /*
+       * Two fixed single-line rows (status + meta) so the header height never
+       * changes, whatever the text says.
+       */
+      .hero-status,
+      .hero-meta {
+        margin: 0;
         font-size: 13px;
-        color: var(--md-muted);
-        line-height: 1.4;
-        /* Wrap instead of truncating so the "checked" time stays visible. */
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        line-height: 18px;
+        height: 18px;
+        white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .hero-status .meta { white-space: nowrap; }
+      .hero-status { margin-top: 2px; }
+      .hero-meta { color: var(--md-muted); font-variant-numeric: tabular-nums; }
 
       .hero-status strong {
         font-weight: 600;
@@ -369,26 +378,22 @@
 
       .cards { display: grid; gap: 8px; }
 
+      /* State changes only recolor / reshape the card; its box never resizes. */
       .card {
         background: var(--md-surface);
         border-radius: var(--r-lg);
         padding: 16px;
-        margin: 0;
         transition:
           background-color var(--dur-effect) var(--spring-effect),
-          border-radius var(--dur-default) var(--spring-default),
-          margin var(--dur-default) var(--spring-default),
-          padding var(--dur-default) var(--spring-default);
+          color var(--dur-effect) var(--spring-effect),
+          border-radius var(--dur-default) var(--spring-default);
       }
 
-      /* Card with a pending update grows outward a little and takes tertiary color. */
       .card[data-state="update"],
       .card[data-state="busy"] {
         background: var(--md-tertiary-container);
         color: var(--md-on-tertiary-container);
         border-radius: var(--r-xl);
-        margin: 0 -4px;
-        padding: 18px 20px;
       }
 
       .card[data-state="busy"] {
@@ -399,7 +404,7 @@
       .card-head {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
       }
 
       .card-icon {
@@ -429,20 +434,27 @@
         border-radius: var(--r-full);
       }
 
+      /* Single line so a narrow pane never wraps the title (and grows the card). */
       .card-title {
         flex: 1 1 auto;
         min-width: 0;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
+      /* Fixed width (fits "Update available" + icon at 8px padding) so state changes never resize it. */
       .chip {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 4px;
         height: 24px;
-        padding: 0 10px 0 8px;
+        width: 136px;
+        padding: 0 8px;
         border-radius: var(--r-sm);
         font-size: 12px;
         font-weight: 600;
@@ -458,7 +470,7 @@
       .chip .icon { width: 16px; height: 16px; }
       .chip.update { background: var(--md-tertiary); color: var(--md-on-tertiary); }
       .chip.busy { background: var(--md-primary); color: var(--md-on-primary); }
-      .chip.muted { background: transparent; color: var(--md-muted); box-shadow: inset 0 0 0 1px var(--md-outline-variant); padding: 0 10px; }
+      .chip.muted { background: transparent; color: var(--md-muted); box-shadow: inset 0 0 0 1px var(--md-outline-variant); }
 
       @keyframes chip-pop {
         from { transform: scale(0.85); }
@@ -470,20 +482,26 @@
       .rows {
         margin: 12px 0 0;
         display: grid;
-        grid-template-columns: auto 1fr;
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 4px 16px;
         font-size: 13px;
+        line-height: 19px;
       }
 
       .rows dt { color: var(--md-muted); margin: 0; }
       .card[data-state="update"] .rows dt,
       .card[data-state="busy"] .rows dt { color: inherit; opacity: 0.75; }
 
+      /* Single line; the full value is in the title tooltip. */
       .rows dd {
+        position: relative;
         margin: 0;
+        min-width: 0;
         text-align: right;
         font-variant-numeric: tabular-nums;
-        word-break: break-all;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       @keyframes shimmer {
@@ -491,15 +509,20 @@
         50% { opacity: 1; }
       }
 
+      /* Skeleton painted by ::after so loading rows keep the real line height. */
       .card[data-state="loading"] .rows dd,
-      .panel[data-state="loading"] .rows dd {
-        justify-self: end;
+      .panel[data-state="loading"] .rows dd { color: transparent; }
+
+      .card[data-state="loading"] .rows dd::after,
+      .panel[data-state="loading"] .rows dd::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 4px;
+        bottom: 4px;
         width: 96px;
-        height: 1em;
-        margin-top: 0.2em;
         border-radius: var(--r-xs);
         background: var(--md-surface-highest);
-        color: transparent;
         animation: shimmer 1.4s ease-in-out infinite;
       }
 
@@ -531,6 +554,30 @@
         min-width: 0;
       }
 
+      /*
+       * Action row and progress share one grid cell: the slot is as tall as
+       * the taller layer, so swapping Update ⇄ progress only cross-fades.
+       */
+      .slot-stack { display: grid; }
+
+      .slot-stack > .slot-layer {
+        grid-area: 1 / 1;
+        min-width: 0;
+        transition:
+          opacity var(--dur-effect) var(--spring-effect),
+          visibility 0s linear 0s;
+      }
+
+      .slot-stack > .slot-layer:not(.on) {
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity var(--dur-effect) var(--spring-effect),
+          visibility 0s linear var(--dur-effect);
+      }
+
+      .progress-wrap { align-self: center; }
+
       /* ---------- wavy indeterminate progress ---------- */
 
       .progress-wrap { padding-top: 14px; }
@@ -550,13 +597,14 @@
         clip-path: inset(0 100% 0 0 round 4px);
       }
 
-      .collapse.open .wavy-bar {
+      /* Always animating, so the bar fades out with its layer instead of vanishing first. */
+      .slot-layer[data-role="progress"] .wavy-bar {
         animation:
           wave-phase 900ms linear infinite,
           indet 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
       }
 
-      .collapse.open .wavy-bar.b { animation-delay: 0ms, -0.9s; }
+      .slot-layer[data-role="progress"] .wavy-bar.b { animation-delay: 0ms, -0.9s; }
 
       @keyframes wave-phase {
         to { -webkit-mask-position: 20px 50%; mask-position: 20px 50%; }
@@ -608,6 +656,16 @@
       .list-copy strong { display: block; font-size: 14px; font-weight: 600; }
       .list-copy span { display: block; font-size: 12px; color: var(--md-muted); line-height: 1.4; }
 
+      /* Dynamic subtitle: one line so its content never changes the row height. */
+      .list-copy span.one-line {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color var(--dur-effect) var(--spring-effect);
+      }
+
+      .list-copy span.err { color: var(--md-error); font-weight: 600; }
+
       .chevron {
         color: var(--md-muted);
         transition: transform var(--dur-default) var(--spring-default);
@@ -615,11 +673,20 @@
 
       [aria-expanded="true"] > .chevron { transform: rotate(180deg); }
 
-      .log-body { padding: 0 16px 16px; }
+      /*
+       * Fixed-height log: new output or the error box only re-split the space
+       * inside, the expanded section itself never changes height.
+       */
+      .log-body {
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 16px 16px;
+      }
 
       pre {
         margin: 0;
-        max-height: 240px;
         overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
@@ -630,11 +697,13 @@
         padding: 10px 12px;
       }
 
+      .log-body pre { flex: 1 1 auto; min-height: 0; }
+
       .error {
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
         gap: 8px;
-        margin-top: 10px;
         padding: 8px 8px 8px 12px;
         border-radius: var(--r-md);
         background: var(--md-error-container);
@@ -642,7 +711,15 @@
         font-size: 13px;
       }
 
-      .error span { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+      .error span {
+        flex: 1 1 auto;
+        min-width: 0;
+        word-break: break-word;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
       .error .btn { height: 32px; padding: 0 14px; color: var(--md-on-error-container); }
 
       /* ---------- M3 switch ---------- */
@@ -724,11 +801,18 @@
       .panel-head { display: flex; align-items: center; gap: 10px; }
       .panel-head strong { flex: 1 1 auto; font-size: 14px; font-weight: 600; }
 
+      /* Always two lines tall, whether it shows the repo or a longer notice. */
       .panel-note {
         margin: 10px 0 0;
         font-size: 12px;
+        line-height: 17px;
+        height: 34px;
         color: var(--md-muted);
         word-break: break-all;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
       }
 
       .panel-note.ok { color: var(--md-primary); font-weight: 600; word-break: normal; }
@@ -907,7 +991,8 @@
         </div>
         <div class="hero-copy">
           <h1>Linux Updater</h1>
-          <p class="hero-status" id="hero-status" aria-live="polite"><strong>Ready</strong></p>
+          <p class="hero-status" aria-live="polite"><strong id="hero-status">Ready</strong></p>
+          <p class="hero-meta" id="hero-meta">&nbsp;</p>
         </div>
         <button type="button" class="icon-btn tonal state-layer" id="btn-check" aria-label="Check for updates" title="Check for updates">
           <svg class="icon"><use href="#i-refresh" /></svg>
@@ -925,24 +1010,22 @@
             <dt>Installed</dt><dd data-role="local">—</dd>
             <dt>Latest</dt><dd data-role="remote">—</dd>
           </dl>
-          <div class="collapse card-action" data-role="action" inert>
+          <div class="collapse" data-role="slot" inert>
             <div class="collapse-inner">
-              <div class="card-action-row">
+              <div class="slot-stack">
+                <div class="slot-layer" data-role="action" inert><div class="card-action-row">
                 <span class="hint">Quits Antigravity and asks for pkexec</span>
                 <button type="button" class="btn tertiary state-layer" id="btn-app">
                   <svg class="icon sm"><use href="#i-download" /></svg>Update
                 </button>
-              </div>
-            </div>
-          </div>
-          <div class="collapse" data-role="progress" inert>
-            <div class="collapse-inner">
-              <div class="progress-wrap">
+              </div></div>
+                <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
                 <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
                 <div class="progress-text">
                   <span data-role="elapsed">Updating… 0:00</span>
                   <span class="hint">pkexec may prompt for your password</span>
                 </div>
+              </div></div>
               </div>
             </div>
           </div>
@@ -958,23 +1041,21 @@
             <dt>Installed</dt><dd data-role="local">—</dd>
             <dt>Latest</dt><dd data-role="remote">—</dd>
           </dl>
-          <div class="collapse card-action" data-role="action" inert>
+          <div class="collapse" data-role="slot" inert>
             <div class="collapse-inner">
-              <div class="card-action-row">
+              <div class="slot-stack">
+                <div class="slot-layer" data-role="action" inert><div class="card-action-row">
                 <span class="hint" data-role="cli-hint">Runs agy update</span>
                 <button type="button" class="btn tertiary state-layer" id="btn-cli">
                   <svg class="icon sm"><use href="#i-download" /></svg><span data-role="cli-label">Update</span>
                 </button>
-              </div>
-            </div>
-          </div>
-          <div class="collapse" data-role="progress" inert>
-            <div class="collapse-inner">
-              <div class="progress-wrap">
+              </div></div>
+                <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
                 <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
                 <div class="progress-text">
                   <span data-role="elapsed">Updating… 0:00</span>
                 </div>
+              </div></div>
               </div>
             </div>
           </div>
@@ -987,7 +1068,7 @@
             <svg class="icon"><use href="#i-bell" /></svg>
             <span class="list-copy">
               <strong>Notify on every startup</strong>
-              <span id="notify-hint">Off: notify only when updates are available.</span>
+              <span>Also notify when everything is up to date</span>
             </span>
             <span class="switch">
               <input type="checkbox" role="switch" id="notify-every" />
@@ -1001,7 +1082,7 @@
             <svg class="icon"><use href="#i-log" /></svg>
             <span class="list-copy">
               <strong>Activity log</strong>
-              <span>Output of the last check or update</span>
+              <span class="one-line" id="log-sub">Output of the last check or update</span>
             </span>
             <svg class="icon chevron"><use href="#i-expand" /></svg>
           </button>
@@ -1033,21 +1114,19 @@
               <dt>Latest</dt><dd data-role="remote">—</dd>
             </dl>
             <p class="panel-note" id="plugin-note"></p>
-            <div class="collapse card-action" data-role="action" inert>
+            <div class="collapse" data-role="slot" inert>
               <div class="collapse-inner">
-                <div class="card-action-row">
+                <div class="slot-stack">
+                  <div class="slot-layer" data-role="action" inert><div class="card-action-row">
                   <span class="hint">Restart Antigravity afterward</span>
                   <button type="button" class="btn tonal state-layer" id="btn-plugin">
                     <svg class="icon sm"><use href="#i-download" /></svg>Update plugin
                   </button>
-                </div>
-              </div>
-            </div>
-            <div class="collapse" data-role="progress" inert>
-              <div class="collapse-inner">
-                <div class="progress-wrap">
+                </div></div>
+                  <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
                   <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
                   <div class="progress-text"><span data-role="elapsed">Updating… 0:00</span></div>
+                </div></div>
                 </div>
               </div>
             </div>
@@ -1216,6 +1295,7 @@
         flash: null, // { kind, text } after a successful update
         settings: { notifyEveryStartup: false },
         pluginOpen: false,
+        settling: null, // job finished OK; waiting for the follow-up check
         logOpen: false,
       };
       let jobTimer = null;
@@ -1277,15 +1357,20 @@
 
       function renderItem(root, kind, info, { missingText = 'not installed' } = {}) {
         const loaded = Boolean(state.status);
-        const busy = state.job === kind;
+        // Stay in "busy" through the follow-up check so the slot does not
+        // flash the Update button again before it collapses.
+        const busy = state.job === kind || state.settling === kind;
         const available = Boolean(info?.updateAvailable);
         const cardState = !loaded ? 'loading' : busy ? 'busy' : available ? 'update' : 'ok';
         root.dataset.state = cardState;
 
         const q = (role) => root.querySelector(`[data-role="${role}"]`);
         if (loaded) {
-          q('local').textContent = info.local || missingText;
-          q('remote').textContent = info.remote || 'unknown';
+          for (const [role, value] of [['local', info.local || missingText], ['remote', info.remote || 'unknown']]) {
+            const dd = q(role);
+            dd.textContent = value;
+            dd.title = value;
+          }
         }
 
         const chip = q('chip');
@@ -1295,14 +1380,21 @@
         else if (info.ahead) setChip(chip, 'muted', 'Ahead of GitHub');
         else setChip(chip, 'ok', 'Up to date');
 
-        setCollapse(q('action'), loaded && available && !busy);
-        setCollapse(q('progress'), busy);
-        const btn = root.querySelector('.card-action .btn');
+        // One slot, two stacked layers: swapping them never changes its height.
+        setCollapse(q('slot'), loaded && (available || busy));
+        setLayer(q('action'), loaded && available && !busy);
+        setLayer(q('progress'), busy);
+        const btn = q('action').querySelector('.btn');
         if (btn) btn.disabled = Boolean(state.job) || state.checking;
       }
 
+      function setLayer(el, on) {
+        el.classList.toggle('on', on);
+        el.inert = !on;
+      }
+
       function render() {
-        const { status, checking, job, error, flash } = state;
+        const { status, checking, job, settling, error, flash } = state;
         const app = status?.app || {};
         const cli = status?.cli || {};
         const plugin = status?.plugin || {};
@@ -1310,14 +1402,15 @@
 
         // Hero: plugin updates are intentionally not counted here.
         const pending = (app.updateAvailable ? 1 : 0) + (tracked && cli.updateAvailable ? 1 : 0);
+        const activeJob = job || settling;
         let heroState, text;
-        if (job || checking) {
+        if (activeJob || checking) {
           heroState = 'busy';
-          text = job ? JOBS[job].running : 'Checking for updates…';
+          text = activeJob ? JOBS[activeJob].running : 'Checking for updates…';
         } else if (error) {
           heroState = 'error';
           text = {
-            job: 'Update failed · see log',
+            job: 'Update failed',
             settings: "Couldn't save settings",
           }[error.kind] || "Couldn't check for updates";
         } else if (!status) {
@@ -1332,19 +1425,14 @@
         }
         $('hero').dataset.state = heroState;
         setLogo(heroState);
-        const heroStatus = $('hero-status');
-        heroStatus.textContent = '';
-        const strong = document.createElement('strong');
-        strong.textContent = text;
-        heroStatus.appendChild(strong);
-        if (state.checkedAt && heroState !== 'busy') {
-          heroStatus.appendChild(document.createTextNode(' · '));
-          const meta = document.createElement('span');
-          meta.className = 'meta';
-          meta.textContent = `checked ${fmtChecked(state.checkedAt)}`;
-          heroStatus.appendChild(meta);
-        }
-        $('btn-check').disabled = Boolean(job) || checking;
+        $('hero-status').textContent = text;
+        // Second header line is always present (nbsp placeholder) so the
+        // header keeps a constant height.
+        let meta = '\u00a0';
+        if (activeJob) meta = `Started ${fmtChecked(new Date(state.jobStart).toISOString())}`;
+        else if (state.checkedAt) meta = `Last checked ${fmtChecked(state.checkedAt)}`;
+        $('hero-meta').textContent = meta;
+        $('btn-check').disabled = Boolean(activeJob) || checking;
 
         // Cards
         renderItem($('app-card'), 'app', {
@@ -1386,11 +1474,17 @@
         setCollapse($('plugin-collapse'), state.pluginOpen);
         $('btn-plugin-panel').setAttribute('aria-expanded', String(state.pluginOpen));
 
-        // Log
+        // Log: errors never auto-expand it; the subtitle turns red instead.
         setCollapse($('log-collapse'), state.logOpen);
         $('btn-log').setAttribute('aria-expanded', String(state.logOpen));
         $('error').hidden = !error;
         $('error-text').textContent = error?.message || '';
+        const logSub = $('log-sub');
+        logSub.classList.toggle('err', Boolean(error));
+        logSub.textContent = error
+          ? `${text} · ${state.logOpen ? 'see details below' : 'open for details'}`
+          : 'Output of the last check or update';
+        logSub.title = error?.message || '';
       }
 
       function tickElapsed() {
@@ -1410,9 +1504,6 @@
         if (toggle.checked !== state.settings.notifyEveryStartup) {
           toggle.checked = state.settings.notifyEveryStartup;
         }
-        $('notify-hint').textContent = state.settings.notifyEveryStartup
-          ? 'On: always notify with the current status at startup.'
-          : 'Off: notify only when updates are available.';
       }
 
       // ---------- API ----------
@@ -1428,9 +1519,10 @@
         return res.json();
       }
 
+      // Never auto-expands the log (that would resize the page); the log row
+      // subtitle and header turn red instead.
       function failed(kind, message) {
         state.error = { kind, message };
-        state.logOpen = true;
       }
 
       async function loadSettings() {
@@ -1514,11 +1606,13 @@
         } finally {
           clearInterval(jobTimer);
           jobTimer = null;
+          if (ok) state.settling = kind;
           state.job = null;
           render();
         }
         if (ok) {
           await check({ keepLog: true });
+          state.settling = null;
           // Guard against scripts that exit 0 without actually updating.
           if (!state.error && state.status?.[kind]?.updateAvailable) {
             failed('job', `${JOBS[kind].name} update finished, but the version did not change`);
