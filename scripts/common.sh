@@ -151,16 +151,30 @@ local_plugin_commit() {
   fi
 }
 
-remote_plugin_version() {
-  curl_get "https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/plugin.json" \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version") or "")'
-}
-
-remote_plugin_commit() {
+# Full SHA of the branch head. api.github.com is not CDN-cached like
+# raw.githubusercontent.com (max-age=300 on branch URLs).
+remote_plugin_commit_full() {
   curl_get \
     -H 'Accept: application/vnd.github+json' \
     "https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}" \
-    | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sha") or "")[:7])'
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("sha") or "")'
+}
+
+remote_plugin_commit() {
+  local sha
+  sha=$(remote_plugin_commit_full) || return 1
+  printf '%s\n' "${sha:0:7}"
+}
+
+# Read plugin.json at an exact commit (immutable, so never stale). Falls back
+# to the branch URL only if the commit could not be resolved.
+remote_plugin_version() {
+  local ref=${1:-}
+  if [ -z "$ref" ]; then
+    ref=$(remote_plugin_commit_full || true)
+  fi
+  curl_get "https://raw.githubusercontent.com/${GITHUB_REPO}/${ref:-$GITHUB_BRANCH}/plugin.json" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version") or "")'
 }
 
 install_plugin_from_dir() {
@@ -181,13 +195,16 @@ install_plugin_from_dir() {
 }
 
 update_this_plugin_from_github() {
-  local stage tarball remote_sha
+  local stage tarball remote_sha ref
   mkdir -p "$CACHE_DIR"
   stage=$(mktemp -d "$CACHE_DIR/plugin-update.XXXXXX")
   tarball="$stage/plugin.tar.gz"
-  echo "Downloading github.com/${GITHUB_REPO}@${GITHUB_BRANCH}" >&2
+  # Download the exact head commit so we install what the status check saw.
+  remote_sha=$(remote_plugin_commit_full || true)
+  ref=${remote_sha:-refs/heads/${GITHUB_BRANCH}}
+  echo "Downloading github.com/${GITHUB_REPO}@${remote_sha:0:7}${remote_sha:+ }(${GITHUB_BRANCH})" >&2
   curl_get -o "$tarball" \
-    "https://codeload.github.com/${GITHUB_REPO}/tar.gz/refs/heads/${GITHUB_BRANCH}"
+    "https://codeload.github.com/${GITHUB_REPO}/tar.gz/${ref}"
   tar -xzf "$tarball" -C "$stage"
   local src
   src=$(find "$stage" -mindepth 1 -maxdepth 1 -type d | head -n1)
@@ -195,9 +212,8 @@ update_this_plugin_from_github() {
   test -f "$src/plugin.json"
   chmod +x "$src"/install.sh "$src"/uninstall.sh "$src"/scripts/*.sh "$src"/bin/* 2>/dev/null || true
   install_plugin_from_dir "$src"
-  remote_sha=$(remote_plugin_commit || true)
   rm -rf "$stage"
-  echo "Plugin updated from GitHub (${GITHUB_BRANCH}${remote_sha:+ @ $remote_sha}). Restart Antigravity to reload the Sidecar."
+  echo "Plugin updated from GitHub (${GITHUB_BRANCH}${remote_sha:+ @ ${remote_sha:0:7}}). Restart Antigravity to reload the Sidecar."
 }
 
 download_app_tarball() {

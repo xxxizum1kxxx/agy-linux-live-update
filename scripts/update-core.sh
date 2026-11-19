@@ -71,8 +71,11 @@ gather_status() {
 
   PLUGIN_LOCAL_VER=$(local_plugin_version || true)
   PLUGIN_LOCAL_SHA=$(local_plugin_commit || true)
-  PLUGIN_REMOTE_VER=$(remote_plugin_version || true)
-  PLUGIN_REMOTE_SHA=$(remote_plugin_commit || true)
+  # Resolve the head commit once, then read plugin.json at that exact commit so
+  # version and commit always agree and are never served from a stale CDN copy.
+  PLUGIN_REMOTE_FULL=$(remote_plugin_commit_full || true)
+  PLUGIN_REMOTE_SHA=${PLUGIN_REMOTE_FULL:0:7}
+  PLUGIN_REMOTE_VER=$(remote_plugin_version "$PLUGIN_REMOTE_FULL" || true)
   PLUGIN_NEEDS=0
   PLUGIN_LOCAL_AHEAD=0
   if [ -n "$PLUGIN_REMOTE_VER" ] && [ -n "$PLUGIN_LOCAL_VER" ]; then
