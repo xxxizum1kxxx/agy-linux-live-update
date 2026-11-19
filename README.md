@@ -1,71 +1,95 @@
-# Linux Updater (`agy-linux-live-update`)
+<p align="center">
+  <img src="assets/logo.svg" width="96" alt="Linux Updater logo">
+</p>
 
-Install, check, and update the [Google Antigravity](https://antigravity.google/download/) desktop App (`/opt`) and `agy` CLI on Linux, with an Antigravity plugin + Sidecar panel.
+<h1 align="center">Linux Updater</h1>
 
-Compatible with **GNOME / KDE / XFCE** (`.desktop`, multi-size hicolor icons, desktop/icon cache refresh).
+<p align="center">
+  Install, check, and update <a href="https://antigravity.google/download/">Google Antigravity</a> on Linux:<br>
+  the desktop App in <code>/opt</code>, the <code>agy</code> CLI, and a Material 3 Expressive Sidecar panel.
+</p>
 
-**中文：** 在 Linux 上安装 / 检查 / 更新 Google Antigravity 桌面 App（`/opt`）与 `agy` CLI，并提供 Antigravity 插件 + Sidecar 面板。兼容 GNOME / KDE / XFCE。
+<p align="center">
+  <img alt="version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fxxxizum1kxxx%2Fagy-linux-live-update%2Fmain%2Fplugin.json&query=%24.version&label=version&color=1a73e8">
+  <img alt="platform" src="https://img.shields.io/badge/platform-Linux-informational?logo=linux&logoColor=white">
+  <img alt="license" src="https://img.shields.io/github/license/xxxizum1kxxx/agy-linux-live-update">
+</p>
 
-> The Sidecar UI is English-only. This README is English-first with Chinese summaries under each section.
->
-> **中文：** Sidecar 面板仅英文。本文档以英文为主，各节附中文摘要。
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
 
-## Quick install (desktop App)
+<table>
+  <tr>
+    <td><img src="docs/images/panel-light.png" width="360" alt="Panel, light theme"></td>
+    <td><img src="docs/images/panel-dark.png" width="360" alt="Panel, dark theme"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/dialog.png" width="240" alt="Update confirmation dialog"><br><sub>Confirm before updating</sub></td>
+    <td align="center"><img src="docs/images/updating.png" width="240" alt="Update in progress"><br><sub>Update in progress</sub></td>
+    <td align="center"><img src="docs/images/plugin-panel.png" width="240" alt="Plugin self-update panel"><br><sub>Plugin self-update</sub></td>
+  </tr>
+</table>
+
+> [!NOTE]
+> The panel UI is English-only. This is a community project, not an official Google product.
+
+## Features
+
+- **FHS install** of the official Linux tarball to `/opt/antigravity`, with launcher, `.desktop` entry, and multi-size icons for GNOME, KDE, and XFCE.
+- **Update checks** for the desktop App and the `agy` CLI against the official download page.
+- **Sidecar panel** inside Antigravity: per-item update buttons, confirmation dialogs, progress, and an activity log.
+- **Desktop notifications** (`notify-send`) when App or CLI updates are available at startup.
+- **Plugin self-update** from this GitHub repository, shown as a badge in the panel footer.
+- **Slash skills** for the agent: `/check-updates`, `/update-app`, `/update-cli`.
+
+## Quick install
 
 ```bash
 git clone https://github.com/xxxizum1kxxx/agy-linux-live-update.git ~/tools/agy-linux-live-update
 cd ~/tools/agy-linux-live-update
 chmod +x install.sh uninstall.sh scripts/*.sh bin/update-antigravity
-./install.sh --yes                # App only by default
+./install.sh --yes                # desktop App only (default)
 ```
 
-Or from an existing checkout:
-
-```bash
-~/tools/agy-linux-live-update/install.sh --yes
-```
-
-Optional combinations (CLI / plugin need explicit flags; CLI is off by default):
+The CLI and the plugin need explicit flags:
 
 ```bash
 ./install.sh --app --cli --yes            # App + official CLI
 ./install.sh --app --cli --plugin --yes   # App + CLI + this plugin
-./install.sh --check                      # Print local/remote versions only
-./install.sh --plugin --yes               # Plugin + enable Sidecar
+./install.sh --plugin --yes               # plugin + enable the Sidecar
 ./install.sh --cli --yes                  # CLI only
+./install.sh --check                      # print local/remote versions only
 ```
 
-Writes under `/opt` and `/usr/local` use **pkexec**.
+Writes under `/opt` and `/usr/local` go through **pkexec**.
 
-**中文：** 克隆后运行 `./install.sh --yes` 默认只装桌面 App。加 `--cli` / `--plugin` 才装 CLI 或插件。写入 `/opt`、`/usr/local` 时会弹出 pkexec。
-
-## What gets installed (FHS)
+## What gets installed
 
 | Path | Purpose |
 |------|---------|
 | `/opt/antigravity` | Expanded official tarball |
-| `/opt/antigravity/.build-id` | Remote build id (update checks) |
+| `/opt/antigravity/.build-id` | Remote build id (used for update checks) |
 | `/opt/antigravity/chrome-sandbox` | setuid root (Electron sandbox) |
 | `/usr/local/bin/antigravity` | Launcher symlink |
 | `/usr/local/share/applications/antigravity.desktop` | Desktop entry |
 | `/usr/local/share/icons/hicolor/*/apps/antigravity.png` | Multi-size icons |
 
-After install the script refreshes `update-desktop-database`, `gtk-update-icon-cache`, `xdg-desktop-menu`, and `kbuildsycoca5|6` when present.
+After installing, the script refreshes `update-desktop-database`, `gtk-update-icon-cache`, `xdg-desktop-menu`, and `kbuildsycoca5|6` when they are present.
 
-Arch detection: `x86_64` → `linux-x64`, `aarch64`/`arm64` → `linux-arm`. Download-page requests use a browser User-Agent to avoid some 403s.
+Architecture is detected automatically: `x86_64` → `linux-x64`, `aarch64`/`arm64` → `linux-arm`. Requests to the download page use a browser User-Agent to avoid some 403 responses.
 
-**中文：** 安装到标准 FHS 路径；结束后尽量刷新桌面与图标缓存。架构自动识别；拉官网页面时使用浏览器 UA。
-
-## Plugin / Sidecar
+## Plugin and Sidecar panel
 
 ```bash
 ./install.sh --plugin --yes
-# or
-agy plugin validate --strict ~/tools/agy-linux-live-update
-agy plugin install ~/tools/agy-linux-live-update
 ```
 
-Enable the Sidecar (`install.sh --plugin` does this; or manually):
+This validates and installs the plugin with `agy plugin install`, then enables the Sidecar (`agy-linux-live-update/updater`) in `~/.gemini/config/config.json`. Restart Antigravity and open **Extensions → Linux Updater**.
+
+<details>
+<summary>Enable the Sidecar manually</summary>
 
 ```bash
 mkdir -p ~/.gemini/config
@@ -73,9 +97,7 @@ python3 - <<'PY'
 import json
 from pathlib import Path
 p = Path.home() / ".gemini/config/config.json"
-cfg = {}
-if p.exists():
-    cfg = json.loads(p.read_text() or "{}")
+cfg = json.loads(p.read_text() or "{}") if p.exists() else {}
 cfg.setdefault("sidecars", {})
 cfg["sidecars"].pop("linux-updater/updater", None)
 cfg["sidecars"]["agy-linux-live-update/updater"] = {"enabled": True}
@@ -84,50 +106,30 @@ print("enabled agy-linux-live-update/updater in", p)
 PY
 ```
 
-Restart Antigravity, then open **Extensions → Linux Updater**.
-
-Slash skills: `/check-updates`, `/update-app`, `/update-cli`.
-
-**中文：** 安装并启用 Sidecar 后重启 Antigravity，从 Extensions → Linux Updater 打开面板。斜杠技能同上。
+</details>
 
 ### Panel layout
 
-The panel uses Material 3 Expressive styling (spring motion, shape morphing) on top of the host theme colors:
+- **Header**: a shape-morphing logo, the overall status, and when the last check ran. The refresh button at the top right runs a fresh check.
+- **Desktop App and CLI cards**: installed vs. latest version. When an update is available the card is tinted and an **Update** button appears. Each update asks for confirmation in a dialog, then shows a wavy progress bar and the elapsed time. The CLI card is hidden when `agy` is not installed.
+- **Notify on every startup** switch and a collapsible **Activity log**. When something fails, the log row's subtitle turns red.
+- **Footer**: the plugin version and commit. A dot on the puzzle icon means a newer plugin is on GitHub; click the icon to open the plugin panel and update from there.
 
-- **Header** – a shape-morphing logo plus the overall status (`Everything is up to date · checked 14:32`). The refresh icon button at the top right runs a fresh check.
-- **Desktop App / CLI cards** – each card shows installed vs. latest. When an update is available the card is tinted and an **Update** button appears in it. Every update asks for confirmation in a dialog first, then shows a wavy progress bar and elapsed time while it runs. The CLI card is hidden when `agy` is not installed.
-- **Notify on every startup** switch and a collapsible **Activity log**. The log opens automatically when something fails.
-- **Footer** – the plugin version (`Linux Updater v1.4.0 · <commit>`). A dot badge on the puzzle icon means a newer plugin is on GitHub. Click the icon to open the plugin panel and update from there.
+Clicks and state changes never resize the layout. The panel opens with the cached result and refreshes in the background.
 
-**中文：** 面板采用 Material 3 Expressive 风格（弹簧动效、形状变换），配色跟随宿主主题。顶部显示形状 logo 和总体状态，右上角刷新按钮用于重新检查。App / CLI 卡片有更新时会变色，并在卡片内出现 Update 按钮；更新前弹出对话框确认，执行时显示波浪进度条和已用时间。下方是通知开关和可展开的日志（出错时自动展开）。插件版本在页脚，有新版本时拼图图标上出现小红点，点击展开插件面板进行更新。
+### Background check and desktop notifications
 
-### Background check & desktop notifications
+When the Sidecar starts, it runs a quiet check and may show a desktop notification through `notify-send` (app name **Antigravity Linux Updater**, Antigravity icon when available).
 
-When the Sidecar process starts, it runs a quiet `status-json` check and may call:
+- **Notify on every startup** off (default): notify only when App or CLI updates are available. The same set of updates is never notified twice.
+- **Notify on every startup** on: always notify at startup, with either "Updates available" or "Up to date".
+- Plugin updates never trigger notifications; they only show as the footer badge.
+- The refresh button in the panel never sends a notification.
+- Antigravity has no Sidecar API for in-app badges, so notifications need a running notification daemon (GNOME, KDE, and XFCE ship one). Without it, checks still work and only the notification is skipped.
 
-```bash
-notify-send --app-name="Linux Updater" …
-```
+## Command-line updates
 
-Notes:
-
-- Antigravity has **no** Sidecar API for host/in-app notification badges. Desktop alerts use **`notify-send`** (libnotify), not the App’s agent Notifications settings.
-- Needs a running notification daemon (GNOME/KDE/XFCE usually provide one). If `notify-send` is missing or fails, checks still work; only the toast is skipped.
-- Desktop notifications use app name **Antigravity Linux Updater** and the Antigravity PNG icon when available.
-- Panel toggle **Notify on every startup**:
-  - **Off** (default): notify only when App/CLI updates are available (same fingerprint is not notified twice).
-  - **On**: always notify at startup with either “Updates available” or “Up to date”.
-- Plugin self-updates never trigger desktop notifications. They only show as the footer badge in the panel.
-- The refresh button in the panel never sends a desktop notification.
-- If the `agy` CLI is not installed, CLI status/update is skipped (App-only). Pass `--cli` to `update-core.sh` / `update-antigravity` to force a CLI probe (e.g. to install).
-- The panel can also check/update **this plugin** from GitHub (`xxxizum1kxxx/agy-linux-live-update` on `main`) from the footer plugin panel, or with `update-core.sh update-plugin`.
-- Opening the panel shows the **cached** result first, then refreshes in the background.
-
-**中文：** Sidecar 启动时自动检查；`notify-send` 应用名为 Antigravity Linux Updater，图标用 Antigravity PNG。桌面通知只针对 App / CLI；插件更新不发通知，只在面板页脚显示小红点。未安装 `agy` CLI 时不检查 CLI。打开面板先显示缓存再后台刷新。
-
-## CLI updates
-
-`install.sh` installs `~/.local/bin/update-antigravity`:
+`install.sh` also installs `~/.local/bin/update-antigravity`:
 
 ```bash
 update-antigravity --check
@@ -135,39 +137,34 @@ update-antigravity --app --yes
 update-antigravity --cli --yes
 ```
 
-Core script: `scripts/update-core.sh` (download + `pkexec scripts/install-root.sh`).
+The core script is `scripts/update-core.sh` (download, then `pkexec scripts/install-root.sh`).
 
-CLI updates use `agy update` when `agy` is already installed, because the official `install.sh` does nothing if the binary exists. The official `install.sh` is only used for a fresh install. After updating, the script checks `agy --version` and exits non-zero if the version did not change.
-
-**中文：** 终端可用 `update-antigravity`；底层是 `scripts/update-core.sh`。已安装 `agy` 时用 `agy update` 更新（官方 install.sh 检测到已存在会直接退出）；未安装时才用官方 install.sh。更新后会核对版本，版本没变则以非 0 退出。
+- **CLI**: when `agy` is already installed, updates go through `agy update`, because the official `install.sh` does nothing if the binary exists. The official `install.sh` is only used for a fresh install. After updating, the script checks `agy --version` and exits non-zero if the version did not change.
+- **Plugin**: the check resolves the head commit of `main` through the GitHub API, then reads `plugin.json` and downloads the tarball at that exact commit, so results are never served from a stale CDN cache.
 
 ## Uninstall
 
-Use `uninstall.sh` (mirrors `install.sh` flags):
+`uninstall.sh` mirrors the `install.sh` flags:
 
 ```bash
-chmod +x uninstall.sh scripts/uninstall-root.sh
-./uninstall.sh                     # App only (default)
-./uninstall.sh --plugin            # plugin + sidecar + update-antigravity wrapper
+./uninstall.sh                     # desktop App only (default)
+./uninstall.sh --plugin            # plugin + Sidecar + update-antigravity wrapper
 ./uninstall.sh --cli               # user-local ~/.local/bin/agy
 ./uninstall.sh --all --yes         # App + CLI + plugin
 ```
 
-`--app` uses **pkexec** via `scripts/uninstall-root.sh` (removes `/opt/antigravity`, launcher, desktop entry, icons, refreshes caches). `--plugin` also clears updater cache under `~/.cache/antigravity/linux-updater` and sidecar data. `--cli` does not delete `~/.gemini/antigravity-cli` config data.
-
-**中文：** 用 `./uninstall.sh` 卸载，flag 与安装脚本对应；默认只卸桌面 App。`--all` 卸 App + CLI + 插件。`--app` 会 pkexec；`--cli` 不删 CLI 配置目录。
+- `--app` uses **pkexec** through `scripts/uninstall-root.sh`: it removes `/opt/antigravity`, the launcher, desktop entry, and icons, then refreshes the caches.
+- `--plugin` also clears the updater cache under `~/.cache/antigravity/linux-updater` and the Sidecar data.
+- `--cli` keeps the `~/.gemini/antigravity-cli` config data.
 
 ## Limitations
 
-- Official Linux tarball only (no deb/rpm repo).
-- Updating the desktop App quits running Antigravity and requires `pkexec`.
-- Sidecar is off until enabled in `~/.gemini/config/config.json`.
-- Icon scaling prefers ImageMagick (`magick`/`convert`); otherwise the source image is copied into each size directory.
-- Desktop update toasts need `notify-send` and a notification daemon.
-- This repository is **not** an official Google product.
-
-**中文：** 仅官方 tarball；更新 App 会退出进程并需 pkexec；Sidecar 需手动启用；图标缩放优先 ImageMagick；桌面通知依赖 `notify-send`；非 Google 官方产品。
+- Only the official Linux tarball is supported (no deb/rpm repository).
+- Updating the desktop App quits Antigravity and requires `pkexec`.
+- The Sidecar stays off until it is enabled in `~/.gemini/config/config.json` (`install.sh --plugin` does this).
+- Icon scaling prefers ImageMagick (`magick`/`convert`); without it, the source image is copied into each size directory.
+- Desktop notifications need `notify-send` and a notification daemon.
 
 ## License
 
-MIT
+[MIT](LICENSE)
