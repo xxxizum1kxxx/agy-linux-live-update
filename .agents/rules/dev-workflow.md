@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Agent Guidelines
 
 ## Git 工作流
@@ -19,3 +23,7 @@
 - 动态文字一律单行省略或固定行数；会互相切换的内容叠放在同一个格子里，只做淡入淡出。
 - 最小宽度 360px（含 10px 滚动条槽位）。
 - 界面改动用模拟后端 + 浏览器子代理，在 400px 和 360px 宽度下用 `boundingBox()` 实测尺寸。
+
+## 注意
+
+- 仓库根目录就是插件根目录，**不要在根目录放 `AGENTS.md` / `GEMINI.md`**：`agy plugin validate --strict` 会报警告，导致 `install.sh --plugin` 安装失败。开发规范放在 `.agents/rules/` 里。
