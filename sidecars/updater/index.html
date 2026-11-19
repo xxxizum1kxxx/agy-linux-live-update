@@ -588,6 +588,17 @@
         overflow: hidden;
       }
 
+      /* Faint full-width track so the moving segment reads as a progress bar. */
+      .wavy::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--md-primary);
+        opacity: 0.22;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
+      }
+
       .wavy-bar {
         position: absolute;
         inset: 0;
@@ -605,6 +616,9 @@
       }
 
       .slot-layer[data-role="progress"] .wavy-bar.b { animation-delay: 0ms, -0.9s; }
+
+      /* Track ripples in phase with the bars so crests line up at their edges. */
+      .slot-layer[data-role="progress"] .wavy::before { animation: wave-phase 900ms linear infinite; }
 
       @keyframes wave-phase {
         to { -webkit-mask-position: 20px 50%; mask-position: 20px 50%; }
@@ -1601,7 +1615,10 @@
           ok = Boolean(data.ok);
           if (!ok) failed('job', data.error || `${JOBS[kind].running.replace('…', '')} failed (code ${data.code ?? '?'})`);
         } catch (err) {
-          failed('job', String(err));
+          // Replacing the plugin can restart this panel's backend mid-request.
+          failed('job', kind === 'plugin'
+            ? 'Lost connection while the plugin was being replaced. Restart Antigravity; the result will show in the Activity log.'
+            : String(err));
           setLog(String(err));
         } finally {
           clearInterval(jobTimer);
