@@ -578,56 +578,85 @@
 
       .progress-wrap { align-self: center; }
 
-      /* ---------- wavy indeterminate progress ---------- */
+      /* ---------- wavy indeterminate progress (M3 Expressive) ---------- */
 
       .progress-wrap { padding-top: 14px; }
 
+      /*
+       * M3E wavy linear progress: a single .wavy-shuttle carries the active
+       * wave and both flat rounded track wings (::before / ::after at ±6px),
+       * so the wave and the track gaps move on the exact same GPU transform
+       * and can never drift out of sync.
+       */
       .wavy {
         position: relative;
         height: 10px;
         overflow: hidden;
+        border-radius: var(--r-full);
       }
 
-      /* Faint full-width track so the moving segment reads as a progress bar. */
-      .wavy::before {
+      .wavy-shuttle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 40%;
+        transform: translateX(-115%);
+        will-change: transform;
+      }
+
+      .wavy-shuttle::before,
+      .wavy-shuttle::after {
         content: "";
         position: absolute;
-        inset: 0;
+        top: 3.5px;
+        height: 3px;
+        width: 400%;
+        border-radius: var(--r-full);
         background: var(--md-primary);
-        opacity: 0.22;
-        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
+        opacity: 0.24;
       }
 
-      .wavy-bar {
+      .wavy-shuttle::before { right: calc(100% + 6px); }
+      .wavy-shuttle::after { left: calc(100% + 6px); }
+
+      .wavy-clip {
         position: absolute;
         inset: 0;
+        overflow: hidden;
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 5px, #000 calc(100% - 5px), transparent);
+        mask-image: linear-gradient(90deg, transparent, #000 5px, #000 calc(100% - 5px), transparent);
+      }
+
+      .wavy-wave {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: calc(100% + 24px);
         background: var(--md-primary);
-        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 50% / 20px 10px repeat-x;
-        clip-path: inset(0 100% 0 0 round 4px);
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10' viewBox='0 0 24 10'%3E%3Cpath d='M-24 5C-22 3.43-20 2-18 2S-14 3.43-12 5-8 8-6 8-2 6.57 0 5 4 2 6 2 10 3.43 12 5 16 8 18 8 22 6.57 24 5 28 2 30 2 34 3.43 36 5 40 8 42 8 46 6.57 48 5' fill='none' stroke='black' stroke-width='3'/%3E%3C/svg%3E") 0 0 / 24px 10px repeat-x;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10' viewBox='0 0 24 10'%3E%3Cpath d='M-24 5C-22 3.43-20 2-18 2S-14 3.43-12 5-8 8-6 8-2 6.57 0 5 4 2 6 2 10 3.43 12 5 16 8 18 8 22 6.57 24 5 28 2 30 2 34 3.43 36 5 40 8 42 8 46 6.57 48 5' fill='none' stroke='black' stroke-width='3'/%3E%3C/svg%3E") 0 0 / 24px 10px repeat-x;
+        will-change: transform;
       }
 
-      /* Always animating, so the bar fades out with its layer instead of vanishing first. */
-      .slot-layer[data-role="progress"] .wavy-bar {
-        animation:
-          wave-phase 900ms linear infinite,
-          indet 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+      /* Always animating so the bar fades out with its layer instead of freezing first. */
+      .slot-layer[data-role="progress"] .wavy-shuttle {
+        animation: wavy-shuttle 1.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
 
-      .slot-layer[data-role="progress"] .wavy-bar.b { animation-delay: 0ms, -0.9s; }
-
-      /* Track ripples in phase with the bars so crests line up at their edges. */
-      .slot-layer[data-role="progress"] .wavy::before { animation: wave-phase 900ms linear infinite; }
-
-      @keyframes wave-phase {
-        to { -webkit-mask-position: 20px 50%; mask-position: 20px 50%; }
+      .slot-layer[data-role="progress"] .wavy-wave {
+        animation: wavy-ripple 420ms linear infinite;
       }
 
-      @keyframes indet {
-        0% { clip-path: inset(0 100% 0 0 round 4px); }
-        55% { clip-path: inset(0 15% 0 35% round 4px); }
-        100% { clip-path: inset(0 0 0 100% round 4px); }
+      @keyframes wavy-shuttle {
+        from { transform: translateX(-115%); }
+        to { transform: translateX(265%); }
+      }
+
+      @keyframes wavy-ripple {
+        from { transform: translateX(0); }
+        to { transform: translateX(-24px); }
       }
 
       .progress-text {
@@ -636,10 +665,22 @@
         gap: 12px;
         margin-top: 8px;
         font-size: 12px;
+        line-height: 17px;
+        height: 17px;
         font-variant-numeric: tabular-nums;
       }
 
-      .progress-text .hint { text-align: right; }
+      .progress-text > span:first-child {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      .progress-text .hint {
+        text-align: right;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       /* ---------- segmented list (settings + log) ---------- */
 
@@ -974,7 +1015,8 @@
           animation-iteration-count: 1 !important;
           transition-duration: 0.01ms !important;
         }
-        .wavy-bar { clip-path: none !important; }
+        .wavy-shuttle { animation: none !important; transform: translateX(75%) !important; }
+        .wavy-wave { animation: none !important; }
       }
     </style>
   </head>
@@ -1034,7 +1076,7 @@
                 </button>
               </div></div>
                 <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
-                <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                <div class="wavy" aria-hidden="true"><span class="wavy-shuttle"><span class="wavy-clip"><span class="wavy-wave"></span></span></span></div>
                 <div class="progress-text">
                   <span data-role="elapsed">Updating… 0:00</span>
                   <span class="hint">pkexec may prompt for your password</span>
@@ -1065,7 +1107,7 @@
                 </button>
               </div></div>
                 <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
-                <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                <div class="wavy" aria-hidden="true"><span class="wavy-shuttle"><span class="wavy-clip"><span class="wavy-wave"></span></span></span></div>
                 <div class="progress-text">
                   <span data-role="elapsed">Updating… 0:00</span>
                 </div>
@@ -1138,7 +1180,7 @@
                   </button>
                 </div></div>
                   <div class="slot-layer" data-role="progress" inert><div class="progress-wrap">
-                  <div class="wavy" aria-hidden="true"><span class="wavy-bar"></span><span class="wavy-bar b"></span></div>
+                  <div class="wavy" aria-hidden="true"><span class="wavy-shuttle"><span class="wavy-clip"><span class="wavy-wave"></span></span></span></div>
                   <div class="progress-text"><span data-role="elapsed">Updating… 0:00</span></div>
                 </div></div>
                 </div>
