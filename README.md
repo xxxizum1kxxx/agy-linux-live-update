@@ -162,7 +162,7 @@ The core script is `scripts/update-core.sh` (download, then `pkexec scripts/inst
 - Only the official Linux tarball is supported (no deb/rpm repository).
 - Updating the desktop App quits Antigravity and requires `pkexec`.
 - The Sidecar stays off until it is enabled in `~/.gemini/config/config.json` (`install.sh --plugin` does this).
-- Icon scaling prefers ImageMagick (`magick`/`convert`); without it, the source image is copied into each size directory.
+- Icon scaling prefers ImageMagick (`magick`/`convert`), falling back to Python Pillow (`PIL`) and then copying the extracted 512×512 PNG into each size directory.
 - Desktop notifications need `notify-send` and a notification daemon.
 
 ## License

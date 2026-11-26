@@ -162,7 +162,7 @@ update-antigravity --cli --yes
 - 只支持官方 Linux tarball（没有 deb/rpm 软件源）。
 - 更新桌面 App 会退出 Antigravity，并需要 `pkexec`。
 - Sidecar 需要在 `~/.gemini/config/config.json` 中启用才会运行（`install.sh --plugin` 会自动启用）。
-- 缩放图标优先使用 ImageMagick（`magick`/`convert`）；没有时直接把原图复制到各尺寸目录。
+- 缩放图标优先使用 ImageMagick（`magick`/`convert`），其次回退到 Python Pillow（`PIL`），两者均不可用时直接将提取出的 512×512 原图复制到各尺寸目录。
 - 桌面通知需要 `notify-send` 和系统通知服务。
 
 ## 许可证
