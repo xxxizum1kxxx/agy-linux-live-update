@@ -52,41 +52,31 @@ curl_get() {
 
 installed_app_version() {
   python3 - <<'PY' 2>/dev/null || true
-import struct, json, sys
+import json, os, struct, sys
+
 p = "/opt/antigravity/resources/app.asar"
 try:
     with open(p, "rb") as f:
-        raw = f.read()
+        prefix = f.read(16)
+        if len(prefix) < 16:
+            sys.exit(0)
+        _, header_pickle_size, _, json_size = struct.unpack_from("<4I", prefix, 0)
+        header = json.loads(f.read(json_size).decode("utf-8"))
+        meta = header.get("files", {}).get("package.json")
+        if not isinstance(meta, dict) or "size" not in meta:
+            sys.exit(0)
+        if meta.get("unpacked"):
+            unpacked = os.path.join(p + ".unpacked", "package.json")
+            if not os.path.isfile(unpacked):
+                sys.exit(0)
+            with open(unpacked, "rb") as uf:
+                data = uf.read()
+        else:
+            f.seek(8 + header_pickle_size + int(meta["offset"]))
+            data = f.read(int(meta["size"]))
 except FileNotFoundError:
     sys.exit(0)
-chunk = raw[16:]
-depth = 0
-in_str = esc = False
-end = None
-for i, c in enumerate(chunk):
-    ch = chr(c)
-    if in_str:
-        if esc:
-            esc = False
-        elif ch == "\\":
-            esc = True
-        elif ch == '"':
-            in_str = False
-        continue
-    if ch == '"':
-        in_str = True
-    elif ch == "{":
-        depth += 1
-    elif ch == "}":
-        depth -= 1
-        if depth == 0:
-            end = i + 1
-            break
-header = json.loads(chunk[:end].decode())
-base = 16 + struct.unpack_from("<I", raw, 12)[0]
-meta = header["files"]["package.json"]
-data = raw[base + int(meta["offset"]) : base + int(meta["offset"]) + int(meta["size"])]
-print(json.loads(data)["version"])
+print(json.loads(data.decode("utf-8"))["version"])
 PY
 }
 
