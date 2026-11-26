@@ -89,6 +89,8 @@ with open(asar_path, "rb") as f:
 
     if meta.get("unpacked"):
         unpacked = os.path.join(asar_path + ".unpacked", *rel_parts)
+        if not os.path.isfile(unpacked):
+            sys.exit(1)
         with open(unpacked, "rb") as uf:
             data = uf.read()
     else:
@@ -103,16 +105,29 @@ with open(out_path, "wb") as out:
 PY
 }
 
-resize_icon_with_pil() {
-  local src=$1 size=$2 dest=$3
-  python3 - "$src" "$size" "$dest" <<'PY'
-import sys
+resize_icons_with_pil() {
+  local src=$1 icon_root=$2
+  shift 2
+  python3 - "$src" "$icon_root" "$@" <<'PY'
+import os, shutil, sys
 from PIL import Image
 
-src, size, dest = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+src, icon_root = sys.argv[1], sys.argv[2]
+sizes = [int(s) for s in sys.argv[3:]]
 resample = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+
 with Image.open(src) as img:
-    img.resize((size, size), resample).save(dest, format="PNG")
+    orig_size = img.size
+    rgba = img.convert("RGBA")
+    for size in sizes:
+        dest_dir = os.path.join(icon_root, f"{size}x{size}", "apps")
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, "antigravity.png")
+        if orig_size == (size, size):
+            shutil.copyfile(src, dest)
+        else:
+            rgba.resize((size, size), resample).save(dest, format="PNG")
+        os.chmod(dest, 0o644)
 PY
 }
 
@@ -143,25 +158,26 @@ if [ -n "$ICON_SRC" ]; then
     RESIZE_MODE="pil"
   fi
 
-  for size in "${ICON_SIZES[@]}"; do
-    dest_dir=/usr/local/share/icons/hicolor/${size}x${size}/apps
-    mkdir -p "$dest_dir"
-    dest="$dest_dir/antigravity.png"
-    case "$RESIZE_MODE" in
-      magick|convert)
-        # Always resize to the target slot size (never drop a 512px file into 256x256).
-        "$RESIZE_MODE" "$ICON_SRC" -resize "${size}x${size}" "$dest"
-        ;;
-      pil)
-        resize_icon_with_pil "$ICON_SRC" "$size" "$dest"
-        ;;
-      *)
-        # Fallback without ImageMagick or Pillow: copy the source so an icon exists.
-        cp -f "$ICON_SRC" "$dest"
-        ;;
-    esac
-    chmod 644 "$dest"
-  done
+  if [ "$RESIZE_MODE" = "pil" ]; then
+    resize_icons_with_pil "$ICON_SRC" /usr/local/share/icons/hicolor "${ICON_SIZES[@]}"
+  else
+    for size in "${ICON_SIZES[@]}"; do
+      dest_dir=/usr/local/share/icons/hicolor/${size}x${size}/apps
+      mkdir -p "$dest_dir"
+      dest="$dest_dir/antigravity.png"
+      case "$RESIZE_MODE" in
+        magick|convert)
+          # Always resize to the target slot size (never drop a 512px file into 256x256).
+          "$RESIZE_MODE" "$ICON_SRC" -resize "${size}x${size}" "$dest"
+          ;;
+        *)
+          # Fallback without ImageMagick or Pillow: copy the source so an icon exists.
+          cp -f "$ICON_SRC" "$dest"
+          ;;
+      esac
+      chmod 644 "$dest"
+    done
+  fi
 else
   echo "warning: no icon source found under /opt/antigravity (or resources/app.asar); skipping icon install" >&2
 fi
