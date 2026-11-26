@@ -31,6 +31,21 @@ detect_rel_arch() {
 
 REL_ARCH=${REL_ARCH:-$(detect_rel_arch)}
 
+require_non_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    local cmd=${1:-$(basename "$0")}
+    echo "Error: do not run $cmd as root or with sudo." >&2
+    echo "  - Desktop App (--app) elevates automatically via pkexec for /opt and /usr/local." >&2
+    echo "  - CLI (--cli), plugin (--plugin), cache, and wrapper files are per-user under \$HOME." >&2
+    if [ -n "${SUDO_USER:-}" ]; then
+      echo "Re-run as your regular user (${SUDO_USER}), without sudo." >&2
+    else
+      echo "Re-run as a regular non-root user." >&2
+    fi
+    return 1
+  fi
+}
+
 curl_get() {
   curl -fsSL -A "$CURL_UA" "$@"
 }

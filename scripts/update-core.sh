@@ -231,6 +231,9 @@ if [ -z "$CMD" ]; then
   usage
   exit 2
 fi
+case "$CMD" in
+  -h|--help) usage; exit 0 ;;
+esac
 shift || true
 
 while [ $# -gt 0 ]; do
@@ -244,13 +247,14 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+require_non_root "update-core.sh"
+
 if [ "$EXPLICIT_SCOPE" -eq 0 ]; then
   SCOPE_APP=1
   SCOPE_CLI=1
 fi
 
 case "$CMD" in
-  -h|--help) usage; exit 0 ;;
   status)
     gather_status
     print_status_text

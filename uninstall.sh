@@ -18,6 +18,9 @@ Usage: uninstall.sh [options]
 
 Remove what this project's install.sh put on the system.
 
+Run as your regular user (do not use sudo): --app elevates automatically via
+pkexec, while --cli and --plugin remove per-user files under $HOME.
+
 Options:
   --app           Remove desktop App from /opt + /usr/local (default if no flags)
   --cli           Remove user-local agy CLI binary (~/.local/bin/agy)
@@ -59,6 +62,8 @@ done
 if [ "$EXPLICIT" -eq 0 ]; then
   DO_APP=1
 fi
+
+require_non_root "uninstall.sh"
 
 confirm() {
   local msg=$1

@@ -20,6 +20,9 @@ Usage: install.sh [options]
 Install / refresh the Antigravity Linux desktop App (FHS layout under /opt),
 optionally the official agy CLI, and this updater plugin.
 
+Run as your regular user (do not use sudo): --app elevates automatically via
+pkexec for /opt and /usr/local, while --cli and --plugin install under $HOME.
+
 Options:
   --app           Install/update desktop App (default if no flags)
   --cli           Install/update agy via official install.sh
@@ -63,6 +66,8 @@ done
 if [ "$EXPLICIT" -eq 0 ]; then
   DO_APP=1
 fi
+
+require_non_root "install.sh"
 
 confirm() {
   local msg=$1

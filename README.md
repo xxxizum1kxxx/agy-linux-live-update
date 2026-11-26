@@ -63,7 +63,7 @@ The CLI and the plugin need explicit flags:
 ./install.sh --check                      # print local/remote versions only
 ```
 
-Writes under `/opt` and `/usr/local` go through **pkexec**.
+Run as your regular user — **do not run with `sudo`**. Writes under `/opt` and `/usr/local` (`--app`) elevate automatically via **pkexec**, while `--cli`, `--plugin`, and `~/.local/bin/update-antigravity` install per-user under `$HOME`.
 
 ## What gets installed
 

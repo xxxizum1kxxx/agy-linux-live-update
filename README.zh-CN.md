@@ -63,7 +63,7 @@ CLI 和插件需要显式指定参数：
 ./install.sh --check                      # 只打印本地和远端版本
 ```
 
-写入 `/opt` 和 `/usr/local` 时会通过 **pkexec** 请求授权。
+请以普通用户身份运行，**不要加 `sudo`**。`--app` 写入 `/opt` 和 `/usr/local` 时会自动通过 **pkexec** 请求授权；`--cli`、`--plugin` 和 `~/.local/bin/update-antigravity` 都是写入当前用户 `$HOME` 的操作，不需要 root。
 
 ## 安装内容
 
