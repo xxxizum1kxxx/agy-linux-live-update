@@ -58,7 +58,7 @@ The CLI and the plugin need explicit flags:
 ```bash
 ./install.sh --app --cli --yes            # App + official CLI
 ./install.sh --app --cli --plugin --yes   # App + CLI + this plugin
-./install.sh --plugin --yes               # plugin + enable the Sidecar
+./install.sh --plugin --yes               # plugin + enable the Sidecar (requires agy CLI)
 ./install.sh --cli --yes                  # CLI only
 ./install.sh --check                      # print local/remote versions only
 ```
@@ -86,7 +86,7 @@ Architecture is detected automatically: `x86_64` → `linux-x64`, `aarch64`/`arm
 ./install.sh --plugin --yes
 ```
 
-This validates and installs the plugin with `agy plugin install`, then enables the Sidecar (`agy-linux-live-update/updater`) in `~/.gemini/config/config.json`. Restart Antigravity and open **Extensions → Linux Updater**.
+This requires `agy` CLI to be installed first (or pass `--cli --plugin` together). It validates and installs the plugin with `agy plugin install`, then enables the Sidecar (`agy-linux-live-update/updater`) in `~/.gemini/config/config.json`. Restart Antigravity and open **Extensions → Linux Updater**.
 
 <details>
 <summary>Enable the Sidecar manually</summary>

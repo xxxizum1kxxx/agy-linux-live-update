@@ -26,7 +26,7 @@ pkexec for /opt and /usr/local, while --cli and --plugin install under $HOME.
 Options:
   --app           Install/update desktop App (default if no flags)
   --cli           Install/update agy via official install.sh
-  --plugin        Install this plugin + enable sidecar in ~/.gemini/config
+  --plugin        Install this plugin + enable sidecar in ~/.gemini/config (requires agy CLI)
   --yes, -y       Non-interactive confirmations (pkexec still prompts)
   --check         Only print local/remote versions; do not install
   -h, --help      Show help
@@ -68,6 +68,18 @@ if [ "$EXPLICIT" -eq 0 ]; then
 fi
 
 require_non_root "install.sh"
+
+if [ "$DO_CHECK" -eq 0 ] && [ "$DO_PLUGIN" -eq 1 ] && [ "$DO_CLI" -eq 0 ]; then
+  if ! resolve_agy_bin >/dev/null 2>&1; then
+    echo "Error: agy CLI is not installed; standalone --plugin installation is not allowed." >&2
+    if [ "$DO_APP" -eq 1 ]; then
+      echo "Run './install.sh --app --cli --plugin' to install CLI together, or './install.sh --app' for App only." >&2
+    else
+      echo "Install the CLI first ('./install.sh --cli') or run './install.sh --cli --plugin'." >&2
+    fi
+    exit 1
+  fi
+fi
 
 confirm() {
   local msg=$1
@@ -127,6 +139,10 @@ if [ "$DO_CLI" -eq 1 ]; then
 fi
 
 if [ "$DO_PLUGIN" -eq 1 ]; then
+  if ! resolve_agy_bin >/dev/null 2>&1; then
+    echo "Error: agy CLI is not installed; cannot install plugin $PLUGIN_NAME." >&2
+    exit 1
+  fi
   if confirm "Install plugin $PLUGIN_NAME and enable sidecar?"; then
     install_this_plugin
     echo "Plugin installed. Restart Antigravity, then open Extensions → Linux Updater."

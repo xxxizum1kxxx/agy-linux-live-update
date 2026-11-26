@@ -58,7 +58,7 @@ CLI 和插件需要显式指定参数：
 ```bash
 ./install.sh --app --cli --yes            # App + 官方 CLI
 ./install.sh --app --cli --plugin --yes   # App + CLI + 本插件
-./install.sh --plugin --yes               # 插件，并启用 Sidecar
+./install.sh --plugin --yes               # 插件，并启用 Sidecar（需先安装 agy CLI）
 ./install.sh --cli --yes                  # 只装 CLI
 ./install.sh --check                      # 只打印本地和远端版本
 ```
@@ -86,7 +86,7 @@ CLI 和插件需要显式指定参数：
 ./install.sh --plugin --yes
 ```
 
-这条命令会校验并用 `agy plugin install` 安装插件，然后在 `~/.gemini/config/config.json` 里启用 Sidecar（`agy-linux-live-update/updater`）。重启 Antigravity 后，从 **Extensions → Linux Updater** 打开面板。
+单独安装插件前需先安装 `agy` CLI（或一起传入 `--cli --plugin`）。这条命令会校验并用 `agy plugin install` 安装插件，然后在 `~/.gemini/config/config.json` 里启用 Sidecar（`agy-linux-live-update/updater`）。重启 Antigravity 后，从 **Extensions → Linux Updater** 打开面板。
 
 <details>
 <summary>手动启用 Sidecar</summary>

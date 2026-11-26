@@ -108,9 +108,22 @@ latest_from_download_page() {
   printf '%s %s\n' "$build" "$url"
 }
 
-installed_cli_version() {
+resolve_agy_bin() {
   if command -v agy >/dev/null 2>&1; then
-    agy --version 2>/dev/null | head -n1 | tr -d '\r'
+    command -v agy
+    return 0
+  fi
+  if [ -x "$HOME/.local/bin/agy" ]; then
+    printf '%s\n' "$HOME/.local/bin/agy"
+    return 0
+  fi
+  return 1
+}
+
+installed_cli_version() {
+  local agy_bin
+  if agy_bin=$(resolve_agy_bin); then
+    "$agy_bin" --version 2>/dev/null | head -n1 | tr -d '\r'
   fi
 }
 
@@ -193,18 +206,18 @@ remote_plugin_version() {
 }
 
 install_plugin_from_dir() {
-  local src=$1
-  if ! command -v agy >/dev/null 2>&1; then
+  local src=$1 agy_bin
+  if ! agy_bin=$(resolve_agy_bin); then
     echo "agy not found; cannot reinstall plugin" >&2
     return 1
   fi
-  agy plugin validate --strict "$src"
+  "$agy_bin" plugin validate --strict "$src"
   # Only remove the legacy plugin id. Never uninstall ourselves first:
   # `agy plugin install` replaces an existing installation in place, while
   # uninstalling makes Antigravity stop this plugin's Sidecar — and with it
   # the process running this very update — leaving the plugin removed.
-  agy plugin uninstall linux-updater >/dev/null 2>&1 || true
-  agy plugin install "$src"
+  "$agy_bin" plugin uninstall linux-updater >/dev/null 2>&1 || true
+  "$agy_bin" plugin install "$src"
   # Re-source PLUGIN_ROOT after install if we updated from a temp tree.
   if [ -d "$HOME/.gemini/config/plugins/$PLUGIN_NAME" ]; then
     PLUGIN_ROOT="$HOME/.gemini/config/plugins/$PLUGIN_NAME"
@@ -262,24 +275,27 @@ install_app_from_tarball() {
 }
 
 install_official_cli() {
-  if command -v agy >/dev/null 2>&1; then
+  local agy_bin
+  if agy_bin=$(resolve_agy_bin); then
     # The official install.sh exits 0 without doing anything when agy already
     # exists ("already installed"), so use the CLI's built-in updater instead.
-    agy update </dev/null
+    "$agy_bin" update </dev/null
   else
     curl -fsSL "$CLI_INSTALL_URL" | bash
   fi
 }
 
 install_this_plugin() {
-  if ! command -v agy >/dev/null 2>&1; then
-    echo "agy not found; install CLI first (pass --cli) then re-run with --plugin" >&2
+  local agy_bin
+  if ! agy_bin=$(resolve_agy_bin); then
+    echo "Error: agy CLI is not installed; cannot install plugin without agy." >&2
+    echo "Install CLI first (./install.sh --cli) or run ./install.sh --cli --plugin." >&2
     return 1
   fi
-  agy plugin validate --strict "$PLUGIN_ROOT"
+  "$agy_bin" plugin validate --strict "$PLUGIN_ROOT"
   # Replace the legacy plugin id; `agy plugin install` replaces ours in place.
-  agy plugin uninstall linux-updater >/dev/null 2>&1 || true
-  agy plugin install "$PLUGIN_ROOT"
+  "$agy_bin" plugin uninstall linux-updater >/dev/null 2>&1 || true
+  "$agy_bin" plugin install "$PLUGIN_ROOT"
   enable_sidecar_config
 }
 
@@ -344,9 +360,10 @@ PY
 }
 
 uninstall_this_plugin() {
-  if command -v agy >/dev/null 2>&1; then
-    agy plugin uninstall linux-updater >/dev/null 2>&1 || true
-    agy plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
+  local agy_bin
+  if agy_bin=$(resolve_agy_bin); then
+    "$agy_bin" plugin uninstall linux-updater >/dev/null 2>&1 || true
+    "$agy_bin" plugin uninstall "$PLUGIN_NAME" >/dev/null 2>&1 || true
   else
     echo "agy not found; removing plugin directory if present"
     rm -rf "$HOME/.gemini/config/plugins/$PLUGIN_NAME"
