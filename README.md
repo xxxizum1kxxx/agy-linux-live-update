@@ -115,7 +115,7 @@ PY
 - **Notify on every startup** switch and a collapsible **Activity log**. When something fails, the log row's subtitle turns red.
 - **Footer**: the plugin version and commit. A dot on the puzzle icon means a newer plugin is on GitHub; click the icon to open the plugin panel and update from there.
 
-Clicks and state changes never resize the layout. The panel opens with the cached result and refreshes in the background.
+Clicks and state changes never resize the layout. The panel opens immediately with live local versions overlaid on the cached remote status, then refreshes from remote in the background. Updating the Desktop App from the panel automatically reopens Antigravity after `pkexec` completes.
 
 ### Background check and desktop notifications
 
