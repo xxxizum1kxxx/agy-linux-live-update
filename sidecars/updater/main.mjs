@@ -1,10 +1,13 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import {
+  closeSync,
   cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
+  readSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -279,7 +282,199 @@ async function maybeSendStatusNotify(status, previous) {
   return nextNotified;
 }
 
-async function refreshAndMaybeNotify({ notify = false } = {}) {
+function readText(path) {
+  try {
+    return readFileSync(path, 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
+function execFileOutput(file, args, timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    execFile(
+      file,
+      args,
+      { timeout: timeoutMs, env: process.env, encoding: 'utf8' },
+      (err, stdout) => {
+        if (err) {
+          resolve(null);
+          return;
+        }
+        const first = String(stdout || '').split(/\r?\n/)[0].trim();
+        resolve(first || null);
+      }
+    );
+  });
+}
+
+// Mirrors installed_app_version() in scripts/common.sh without spawning Python.
+function readAppVersionFromAsar(asarPath = '/opt/antigravity/resources/app.asar') {
+  let fd;
+  try {
+    fd = openSync(asarPath, 'r');
+    const prefix = Buffer.alloc(16);
+    if (readSync(fd, prefix, 0, 16, 0) < 16) return null;
+    const headerPickleSize = prefix.readUInt32LE(4);
+    const jsonSize = prefix.readUInt32LE(12);
+    if (!jsonSize || jsonSize > 16 * 1024 * 1024) return null;
+    const headerBuf = Buffer.alloc(jsonSize);
+    if (readSync(fd, headerBuf, 0, jsonSize, 16) < jsonSize) return null;
+    const header = JSON.parse(headerBuf.toString('utf8'));
+    const meta = header?.files?.['package.json'];
+    if (!meta || typeof meta !== 'object' || typeof meta.size !== 'number') {
+      return null;
+    }
+    let raw;
+    if (meta.unpacked) {
+      const unpackedPath = join(`${asarPath}.unpacked`, 'package.json');
+      if (!existsSync(unpackedPath)) return null;
+      raw = readFileSync(unpackedPath, 'utf8');
+    } else {
+      const offset = 8 + headerPickleSize + Number(meta.offset);
+      const pkgBuf = Buffer.alloc(meta.size);
+      if (readSync(fd, pkgBuf, 0, meta.size, offset) < meta.size) return null;
+      raw = pkgBuf.toString('utf8');
+    }
+    return JSON.parse(raw)?.version || null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        closeSync(fd);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
+function readLocalAppInfo() {
+  const localBuildId = readText('/opt/antigravity/.build-id') || null;
+  const localVersion =
+    readAppVersionFromAsar() ||
+    (localBuildId ? localBuildId.split('-')[0] || null : null);
+  return { localVersion, localBuildId };
+}
+
+async function readLocalPluginInfo() {
+  let localVersion = null;
+  try {
+    const manifest = JSON.parse(
+      readFileSync(join(PLUGIN_ROOT, 'plugin.json'), 'utf8')
+    );
+    localVersion = manifest?.version || null;
+  } catch {
+    localVersion = null;
+  }
+  let localCommit = null;
+  if (existsSync(join(PLUGIN_ROOT, '.git'))) {
+    localCommit = await execFileOutput(
+      'git',
+      ['-C', PLUGIN_ROOT, 'rev-parse', '--short', 'HEAD'],
+      2000
+    );
+  }
+  return { localVersion, localCommit };
+}
+
+async function readLocalCliVersion() {
+  const direct = await execFileOutput('agy', ['--version'], 3000);
+  if (direct) return direct;
+  const fallback = join(homedir(), '.local', 'bin', 'agy');
+  if (existsSync(fallback)) {
+    return execFileOutput(fallback, ['--version'], 3000);
+  }
+  return null;
+}
+
+async function readLiveLocalInfo() {
+  const app = readLocalAppInfo();
+  const [plugin, cliVersion] = await Promise.all([
+    readLocalPluginInfo(),
+    readLocalCliVersion(),
+  ]);
+  return {
+    app,
+    cli: { localVersion: cliVersion },
+    plugin,
+  };
+}
+
+function compareSemver(a, b) {
+  if (!a || !b) return 0;
+  const pa = String(a)
+    .split('.')
+    .slice(0, 3)
+    .map((x) => Number.parseInt(x, 10));
+  const pb = String(b)
+    .split('.')
+    .slice(0, 3)
+    .map((x) => Number.parseInt(x, 10));
+  if (pa.some(Number.isNaN) || pb.some(Number.isNaN)) return 0;
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+// Overlay live on-disk local versions onto a cached status and recompute
+// update flags so restarts after App/Plugin updates never flash stale versions.
+function overlayLiveLocal(cachedStatus, local) {
+  if (!cachedStatus || !local) return cachedStatus;
+  const app = { ...(cachedStatus.app || {}) };
+  const cli = { ...(cachedStatus.cli || {}) };
+  const plugin = { ...(cachedStatus.plugin || {}) };
+
+  app.localVersion = local.app.localVersion;
+  app.localBuildId = local.app.localBuildId;
+  if (!app.remoteBuildId) {
+    app.updateAvailable = false;
+  } else if (app.localBuildId === app.remoteBuildId) {
+    app.updateAvailable = false;
+  } else if (
+    app.localVersion &&
+    app.remoteVersion &&
+    compareSemver(app.localVersion, app.remoteVersion) > 0
+  ) {
+    app.updateAvailable = false;
+  } else {
+    app.updateAvailable = true;
+  }
+
+  cli.localVersion = local.cli.localVersion;
+  cli.tracked = Boolean(cli.localVersion);
+  if (!cli.tracked) {
+    cli.remoteVersion = null;
+    cli.updateAvailable = false;
+  } else {
+    cli.updateAvailable = Boolean(
+      cli.remoteVersion &&
+        compareSemver(cli.remoteVersion, cli.localVersion) > 0
+    );
+  }
+
+  plugin.localVersion = local.plugin.localVersion;
+  plugin.localCommit = local.plugin.localCommit;
+  if (plugin.remoteVersion && plugin.localVersion) {
+    const cmp = compareSemver(plugin.remoteVersion, plugin.localVersion);
+    plugin.updateAvailable = cmp > 0;
+    plugin.localAhead = cmp < 0;
+  } else {
+    plugin.updateAvailable = Boolean(
+      plugin.remoteVersion && !plugin.localVersion
+    );
+    plugin.localAhead = false;
+  }
+
+  return { ...cachedStatus, app, cli, plugin };
+}
+
+let inFlightRefresh = null;
+
+async function doRefreshAndMaybeNotify({ notify = false } = {}) {
   const previous = readCache();
   const result = await fetchFreshStatus();
   if (!result.ok) {
@@ -299,7 +494,15 @@ async function refreshAndMaybeNotify({ notify = false } = {}) {
         lastErrorLog: result.log,
       });
     }
-    return { ...result, status: previous?.status, stale: Boolean(previous?.status) };
+    const fallbackStatus = previous?.status
+      ? overlayLiveLocal(previous.status, await readLiveLocalInfo())
+      : undefined;
+    return {
+      ...result,
+      status: fallbackStatus,
+      stale: Boolean(fallbackStatus),
+      settings: readSettings(),
+    };
   }
 
   let nextNotified = previous?.notifiedFingerprint || '';
@@ -307,13 +510,14 @@ async function refreshAndMaybeNotify({ notify = false } = {}) {
     nextNotified = await maybeSendStatusNotify(result.status, previous);
   }
 
+  const latestCache = readCache();
   const payload = {
     checkedAt: result.checkedAt,
     ok: true,
     status: result.status,
     log: result.log,
     notifiedFingerprint: nextNotified,
-    lastJob: previous?.lastJob || null,
+    lastJob: latestCache?.lastJob || previous?.lastJob || null,
   };
   writeCache(payload);
   return {
@@ -323,13 +527,30 @@ async function refreshAndMaybeNotify({ notify = false } = {}) {
   };
 }
 
-function cachedStatusResponse() {
-  recoverPluginJob();
+// Coalesce concurrent startup + panel refreshes so we do not spawn duplicate
+// status-json probes right after a restart.
+async function refreshAndMaybeNotify({ notify = false } = {}) {
+  if (inFlightRefresh) {
+    const res = await inFlightRefresh;
+    return { ...res, settings: readSettings() };
+  }
+  const p = doRefreshAndMaybeNotify({ notify });
+  inFlightRefresh = p;
+  try {
+    return await p;
+  } finally {
+    if (inFlightRefresh === p) inFlightRefresh = null;
+  }
+}
+
+async function cachedStatusResponse() {
+  recoverDetachedJobs();
   const cache = readCache();
   if (!cache?.status) return null;
+  const liveStatus = overlayLiveLocal(cache.status, await readLiveLocalInfo());
   return {
     ok: true,
-    status: cache.status,
+    status: liveStatus,
     log: cache.log || '',
     cached: true,
     checkedAt: cache.checkedAt || null,
@@ -348,7 +569,7 @@ async function handleStatus(data = {}, { forceFresh = false } = {}) {
     data.fresh === 1;
 
   if (!wantFresh) {
-    const cached = cachedStatusResponse();
+    const cached = await cachedStatusResponse();
     if (cached) return cached;
     return {
       ok: false,
@@ -405,41 +626,84 @@ async function runUpdateJob(kind, args, timeoutMs) {
 }
 
 /*
- * Plugin self-update replaces this plugin's own directory, and Antigravity may
- * restart (kill) this Sidecar when that happens. So the update runs:
- *   - from a temporary copy of scripts/ (the originals are being replaced),
- *   - in its own session (detached), so it survives this process exiting,
- *   - writing its output and exit code to files, which a later Sidecar
- *     start (or status request) turns into the Activity log entry.
+ * Detached update helpers for App and Plugin updates:
+ *   - Plugin self-update replaces this plugin's own directory and triggers a
+ *     Sidecar restart; it runs from a temp copy of scripts/.
+ *   - App update quits Antigravity (stopping this Sidecar) before pkexec runs,
+ *     then automatically relaunches Antigravity as the regular user on success.
+ * Both write their output and exit code to dataDir() so the next Sidecar start
+ * records them into Activity log (lastJob).
  */
-function pluginJobPaths() {
+function detachedJobPaths(kind) {
   const dir = ensureDataDir();
   return {
-    log: join(dir, 'plugin-update.log'),
-    exit: join(dir, 'plugin-update.exit'),
+    log: join(dir, `${kind}-update.log`),
+    exit: join(dir, `${kind}-update.exit`),
   };
 }
 
-function readText(path) {
-  try {
-    return readFileSync(path, 'utf8').trim();
-  } catch {
-    return '';
+function recoverDetachedJobs() {
+  const pending = [];
+  for (const kind of ['app', 'plugin']) {
+    const { log, exit } = detachedJobPaths(kind);
+    if (!existsSync(exit)) continue;
+    try {
+      const mtimeMs = statSync(exit).mtimeMs;
+      pending.push({ kind, log, exit, mtimeMs });
+    } catch {
+      /* ignore */
+    }
+  }
+  pending.sort((a, b) => a.mtimeMs - b.mtimeMs);
+  for (const item of pending) {
+    const code = Number(readText(item.exit));
+    const at = new Date(item.mtimeMs).toISOString();
+    recordJob(item.kind, { ok: code === 0, code, log: readText(item.log) }, at);
+    rmSync(item.exit, { force: true });
   }
 }
 
-function recoverPluginJob() {
-  const { log, exit } = pluginJobPaths();
-  if (!existsSync(exit)) return;
-  const code = Number(readText(exit));
-  const at = statSync(exit).mtime.toISOString();
-  recordJob('plugin', { ok: code === 0, code, log: readText(log) }, at);
-  rmSync(exit, { force: true });
+function runAppUpdateDetached() {
+  return new Promise((resolve) => {
+    const { log, exit } = detachedJobPaths('app');
+    rmSync(exit, { force: true });
+    // Keep the command line free of "/opt/antigravity/antigravity" so
+    // install_app_from_tarball's `pkill -f` never kills this wrapper.
+    const launcher = '/usr/local/bin/antigravity';
+    const script = [
+      'bash "$1" update-app --yes >"$2" 2>&1; code=$?',
+      'echo "$code" >"$3"',
+      'if [ "$code" -eq 0 ] && [ -x "$4" ] && grep -q "^App updated\\." "$2"; then',
+      '  echo "Relaunching Antigravity..." >>"$2"',
+      '  (',
+      '    unset ELECTRON_RUN_AS_NODE ANTIGRAVITY_LS_ADDRESS ANTIGRAVITY_CSRF_TOKEN \\',
+      '      ANTIGRAVITY_SIDECAR_WEB_PORT ANTIGRAVITY_SIDECAR_UI_TOKEN \\',
+      '      ANTIGRAVITY_EXECUTABLE_DATA_DIR ANTIGRAVITY_AGENTAPI_EXE',
+      '    if command -v setsid >/dev/null 2>&1; then',
+      '      setsid -f "$4" </dev/null >/dev/null 2>&1',
+      '    else',
+      '      nohup "$4" </dev/null >/dev/null 2>&1 &',
+      '    fi',
+      '  )',
+      'fi',
+      'exit "$code"',
+    ].join('\n');
+    const child = spawn(
+      'bash',
+      ['-c', script, 'bash', CORE, log, exit, launcher],
+      { detached: true, stdio: 'ignore', env: process.env }
+    );
+    child.on('error', (err) => resolve({ ok: false, code: 1, log: String(err) }));
+    child.on('close', (code) => {
+      rmSync(exit, { force: true });
+      resolve({ ok: code === 0, code: code ?? 1, log: readText(log) });
+    });
+  });
 }
 
 function runPluginUpdateDetached() {
   return new Promise((resolve) => {
-    const { log, exit } = pluginJobPaths();
+    const { log, exit } = detachedJobPaths('plugin');
     rmSync(exit, { force: true });
     let runner;
     try {
@@ -467,9 +731,11 @@ function runPluginUpdateDetached() {
   });
 }
 
-app.api('/api/update-app', async () =>
-  runUpdateJob('app', ['update-app', '--yes'], 900_000)
-);
+app.api('/api/update-app', async () => {
+  const response = await runAppUpdateDetached();
+  recordJob('app', response);
+  return response;
+});
 
 app.api('/api/update-cli', async () =>
   runUpdateJob('cli', ['update-cli', '--yes'], 300_000)
@@ -481,8 +747,8 @@ app.api('/api/update-plugin', async () => {
   return response;
 });
 
-// A plugin update that outlived the previous Sidecar process is recorded now.
-recoverPluginJob();
+// Recover App / Plugin updates that outlived the previous Sidecar process.
+recoverDetachedJobs();
 
 await app.run();
 

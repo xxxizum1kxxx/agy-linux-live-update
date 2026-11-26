@@ -1336,7 +1336,7 @@
       // ---------- state ----------
 
       const JOBS = {
-        app: { name: 'App', path: '/api/update-app', running: 'Updating Desktop App…', done: 'App updated · relaunch Antigravity' },
+        app: { name: 'App', path: '/api/update-app', running: 'Updating Desktop App…', done: 'App updated' },
         cli: { name: 'CLI', path: '/api/update-cli', running: 'Updating CLI…', done: 'CLI updated' },
         plugin: { name: 'Plugin', path: '/api/update-plugin', running: 'Updating plugin…', done: 'Plugin updated · restart Antigravity to reload this panel' },
       };
@@ -1657,10 +1657,12 @@
           ok = Boolean(data.ok);
           if (!ok) failed('job', data.error || `${JOBS[kind].running.replace('…', '')} failed (code ${data.code ?? '?'})`);
         } catch (err) {
-          // Replacing the plugin can restart this panel's backend mid-request.
+          // App updates close Antigravity; plugin updates restart this Sidecar.
           failed('job', kind === 'plugin'
             ? 'Lost connection while the plugin was being replaced. Restart Antigravity; the result will show in the Activity log.'
-            : String(err));
+            : kind === 'app'
+              ? 'Antigravity is closing to apply the update. It will reopen automatically after pkexec completes.'
+              : String(err));
           setLog(String(err));
         } finally {
           clearInterval(jobTimer);
@@ -1761,7 +1763,7 @@
           body: 'Downloads the official tarball and installs it to /opt/antigravity.',
           from: fmtVersion(app.localVersion, app.localBuildId),
           to: fmtVersion(app.remoteVersion, app.remoteBuildId),
-          note: 'Antigravity will quit, and pkexec will ask for your password. Relaunch the app afterward.',
+          note: 'Antigravity will quit, pkexec will ask for your password, and Antigravity will reopen automatically when done.',
           confirm: 'Update',
         });
         if (ok) runJob('app');
