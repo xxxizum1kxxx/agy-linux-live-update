@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 set -euo pipefail
+umask 022
 # Privileged installer. Usage: install-root.sh <tarball> <build-id>
 # Intended to be run via pkexec.
 
